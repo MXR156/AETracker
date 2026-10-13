@@ -76,6 +76,9 @@ class PortfolioController extends Controller
                 'boosted' => round($r['on_per_day'], 11),   // boosted all day at the tier
                 'base' => round($r['off_per_day'], 11),     // no ad boost
                 'typical' => round($r['per_day'], 11),      // your usual boosted hours
+                'boosted_month' => round($r['boosted_per_month'], 11), // boosted all day, incl. Super Boost days
+                'base_month' => round($r['base_per_month'], 11),
+                'typical_month' => round($r['per_month'], 11),
                 'boost' => $r['boost_multiplier'],
             ];
         }

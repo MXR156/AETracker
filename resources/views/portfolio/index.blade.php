@@ -31,8 +31,6 @@
 @php($m = fn ($v) => ae_earn($v))
 @php($typical = $e['boost_hours'] < 24)
 @php($sb = $e['super_days'] > 0)
-@php($fullDay = $e['on_per_day'])
-@php($fullSuperDay = $e['super_per_second'] * 86400)
 <div class="card table-wrap">
     <h2>Earnings <span class="muted small" style="font-weight:400">(includes your +{{ ae_num($e['badge_percent'], 2) }}% badge boost)</span></h2>
     <table>
@@ -49,11 +47,11 @@
                 @if ($typical)<td class="num">{{ $m($e['per_day'] / 86400 * $seconds) }}</td>@endif
             </tr>
         @endforeach
-        @foreach ([['Per month', 12], ['Per year', 1]] as [$label, $div])
+        @foreach ([['Per month', 12, 'month'], ['Per year', 1, 'year']] as [$label, $div, $period])
             <tr>
                 <td>{{ $label }} <span class="muted small nowrap">({{ number_format($e['normal_days'] / $div, 2).'d'.($sb ? ' + '.number_format($e['super_days'] / $div, 2).'SBd' : '') }})</span></td>
-                <td class="num">{{ $m($e['off_per_day'] * 365 / $div) }}</td>
-                <td class="num"><strong>{{ $m(($e['normal_days'] * $fullDay + $e['super_days'] * $fullSuperDay) / $div) }}</strong></td>
+                <td class="num">{{ $m($e['base_per_'.$period]) }}</td>
+                <td class="num"><strong>{{ $m($e['boosted_per_'.$period]) }}</strong></td>
                 @if ($typical)<td class="num">{{ $m($e['per_year'] / $div) }}</td>@endif
             </tr>
         @endforeach

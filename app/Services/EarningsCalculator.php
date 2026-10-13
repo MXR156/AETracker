@@ -139,6 +139,11 @@ class EarningsCalculator
             'per_month' => $perYear / 12,
             'per_year' => $perYear,
             'avg_per_day' => $perYear / 365,
+            // The earnings table's columns: base = no ad boost, boosted = boosted all day (incl. Super Boost days).
+            'base_per_month' => $off * 86400 * 365 / 12,
+            'base_per_year' => $off * 86400 * 365,
+            'boosted_per_year' => ($normalDays * $on + $superDays * $super) * 86400,
+            'boosted_per_month' => ($normalDays * $on + $superDays * $super) * 86400 / 12,
             'next_boost_drop' => $this->nextBoostDrop($tierAmount),
             'next_badge_tier' => $this->nextBadgeTier($badgeCount),
         ];

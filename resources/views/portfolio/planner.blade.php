@@ -67,6 +67,14 @@
 </div>
 
 <div class="card">
+    <h2>Monthly earnings as you add parcels</h2>
+    @php($sbDays = (float) $settings['super_boost_days_per_year'])
+    <p class="muted small" style="margin-top:0">A month is a twelfth of a year: {{ number_format((365 - $sbDays) / 12, 2) }} normal days{{ $sbDays > 0 ? ' + '.number_format($sbDays / 12, 2).' Super Boost days at '.ae_num((float) $settings['super_boost_multiplier'], 2).'×' : '' }},
+        like the "Per month" row in your earnings table.</p>
+    <div class="chart-box"><canvas id="curve-month"></canvas></div>
+</div>
+
+<div class="card">
     <h2>Earnings per day as you add parcels - base (no ad boost)</h2>
     <p class="muted small" style="margin-top:0">Rent with your badge boost only. This always goes up as you add parcels.</p>
     <div class="chart-box"><canvas id="curve-base"></canvas></div>
@@ -102,6 +110,17 @@
         boosted.push({ label: 'Boost multiplier', data: c.map(r => r.boost), borderColor: AE.palette[2], backgroundColor: AE.palette[2],
             yAxisID: 'y2', stepped: true, pointRadius: 0, borderDash: [4, 4] });
         new Chart(document.getElementById('curve-boosted'), { type: 'line', data: { labels, datasets: boosted }, options: options(true) });
+
+        const monthly = [
+            line('With ad boost (all day)', 'boosted_month', AE.palette[0]),
+            line('Base (no ad boost)', 'base_month', AE.palette[3]),
+        ];
+        @if ($hours < 24)
+            monthly.splice(1, 0, line('Your typical ({{ ae_num($hours, 1) }}h boosted)', 'typical_month', AE.palette[1], { borderDash: [6, 4] }));
+        @endif
+        const monthOpts = options(false);
+        monthOpts.scales.y.title.text = 'Est. per month';
+        new Chart(document.getElementById('curve-month'), { type: 'line', data: { labels, datasets: monthly }, options: monthOpts });
 
         new Chart(document.getElementById('curve-base'), {
             type: 'line', data: { labels, datasets: [line('Base (no ad boost)', 'base', AE.palette[3])] }, options: options(false),

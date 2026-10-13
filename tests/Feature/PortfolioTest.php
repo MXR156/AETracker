@@ -95,6 +95,14 @@ class PortfolioTest extends TestCase
         $this->assertSame(100, $first['parcels']);
         $this->assertEqualsWithDelta($first['base'] * 15, $first['boosted'], 1e-12); // 100 parcels = 15x tier (61-100)
 
+        // Monthly chart: like the earnings table's "Per month" row (27.75 normal days + 2.67 Super Boost days at 50x).
+        $this->assertStringContainsString('<canvas id="curve-month">', $html);
+        $this->assertStringContainsString('27.75 normal days + 2.67 Super Boost days at 50×', $html);
+        $day = $first['boosted'];
+        $superDay = $first['base'] * 50;
+        $this->assertEqualsWithDelta((333 * $day + 32 * $superDay) / 12, $first['boosted_month'], 1e-9);
+        $this->assertEqualsWithDelta($first['base'] * 365 / 12, $first['base_month'], 1e-9);
+
         $this->get('/my-parcels/planner?boost_hours=6')->assertOk()->assertSee('Your typical day (6h boosted)');
     }
 

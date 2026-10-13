@@ -54,7 +54,7 @@
                 <div class="field"><label for="super_boost_multiplier">Super Boost multiplier</label>
                     <input type="number" step="any" min="0" id="super_boost_multiplier" name="super_boost_multiplier" value="{{ $v('super_boost_multiplier') }}"></div>
             </div>
-            <div class="hint" style="margin-top:-.5rem">Days when the ad boost is raised for everyone (e.g. 32 days at 50×). Set days to 0 to ignore them.</div>
+            <div class="hint" style="margin-top:-.5rem">During a Super Boost everyone's ad boost jumps to this multiplier, whatever their normal tier (e.g. 32 days a year at 50×). Set days to 0 to ignore them.</div>
 
             <h2 style="margin-top:1.25rem">Badge boost</h2>
             <div class="field">
