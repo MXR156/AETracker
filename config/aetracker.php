@@ -40,13 +40,16 @@ return [
         // How many hours a day you are typically on ad boost.
         'boost_hours_per_day' => '6',
 
-        // Ad boost multiplier tiers. Atlas Earth sets your tier from your base rent per second, so tiers
-        // are given in "common parcel equivalents" (base rent / common rent). One line per tier:
-        // "from:multiplier". The highest "from" that you meet applies.
-        'boost_tiers' => "0:50\n31:40\n51:30\n151:20\n251:15\n501:10\n1001:5",
+        // Ad boost multiplier tiers, one line per tier: "from:multiplier". The highest "from" you meet applies.
+        'boost_tiers' => "1:20\n61:15\n101:10\n151:8\n181:7\n221:6\n251:5\n301:4\n351:3\n451:2",
+
+        // What the boost tier "from" numbers count: 'parcels' (how many parcels you own, as the game's
+        // tier table shows) or 'rent' (common-parcel equivalents: base rent / common rent, so a
+        // legendary counts as several commons).
+        'boost_tier_basis' => 'parcels',
 
         // Badge rent boost by number of badges owned, one line per tier: "badges:percent".
-        'badge_tiers' => "1:5\n11:10\n26:15\n51:20\n101:25\n151:30",
+        'badge_tiers' => "1:5\n11:10\n31:15\n61:20\n101:25",
 
         // What things cost you, in real money, for the planner.
         'atlas_bucks_per_parcel' => '100',

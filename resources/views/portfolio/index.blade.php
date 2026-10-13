@@ -17,13 +17,13 @@
     <div class="stat"><div class="label">Parcels</div><div class="value">{{ number_format($e['parcels']) }}</div>
         <div class="sub">@foreach ($calc::RARITIES as $r){{ $e['counts'][$r] ?? 0 }} {{ substr($r, 0, 1) === 'l' ? 'leg' : substr($r, 0, 3) }}@if (! $loop->last) · @endif @endforeach</div></div>
     <div class="stat"><div class="label">Badges</div><div class="value">{{ $owned->count() }}</div><div class="sub">+{{ ae_num($e['badge_percent'], 2) }}% rent</div></div>
-    <div class="stat"><div class="label">Ad boost</div><div class="value">{{ ae_num($e['boost_multiplier'], 2) }}×</div><div class="sub">{{ ae_num($e['boost_hours'], 1) }} h/day boosted</div></div>
+    <div class="stat"><div class="label">Ad boost</div><div class="value">{{ ae_num($e['boost_multiplier'], 2) }}×</div><div class="sub">{{ ae_num($e['boost_hours'], 1) }} h/day boosted · tier from {{ number_format($e['tier_amount']) }} {{ $calc->tierBasis() === 'rent' ? 'equiv.' : 'parcels' }}</div></div>
     <div class="stat"><div class="label">Est. per day</div><div class="value">{{ ae_money($e['per_day']) }}</div><div class="sub">{{ ae_money($e['per_year'], 2) }} / year</div></div>
 </div>
 
 @if ($e['next_boost_drop'] && $e['parcels'] > 0)
     <div class="notice">
-        Boost tier: you're about <strong>{{ number_format(ceil($e['next_boost_drop']['away'])) }}</strong> common-parcel equivalents away from dropping to the
+        Boost tier: you're <strong>{{ number_format(ceil($e['next_boost_drop']['away'])) }}</strong> {{ $calc->tierBasis() === 'rent' ? 'common-parcel equivalents' : Str::plural('parcel', (int) ceil($e['next_boost_drop']['away'])) }} away from dropping to the
         <strong>{{ ae_num($e['next_boost_drop']['multiplier'], 2) }}×</strong> boost tier.
         The <a href="{{ route('portfolio.planner') }}">planner</a> shows whether buying past it is still worth it.
     </div>

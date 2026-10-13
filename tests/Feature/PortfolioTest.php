@@ -53,6 +53,11 @@ class PortfolioTest extends TestCase
         $this->put('/settings', array_merge(config('aetracker.defaults'), ['boost_tiers' => 'rubbish']))
             ->assertSessionHasErrors('boost_tiers');
 
+        $this->put('/settings', array_merge(config('aetracker.defaults'), ['boost_tier_basis' => 'rent']))
+            ->assertSessionHasNoErrors();
+        $this->assertSame('rent', Setting::allValues()['boost_tier_basis']);
+        $this->get('/settings')->assertOk()->assertSee('Tiers are based on');
+
         $this->put('/settings', ['reset' => 1]);
         $this->assertSame(config('aetracker.defaults.boost_hours_per_day'), Setting::allValues()['boost_hours_per_day']);
     }

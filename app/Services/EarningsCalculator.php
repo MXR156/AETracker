@@ -85,7 +85,9 @@ class EarningsCalculator
 
         $commonRent = $this->rentPerSecond('common') ?: 1;
         $equivalents = $base / $commonRent;
-        $boostMultiplier = self::tierValue($this->boostTiers(), $equivalents) ?: 1;
+        $parcels = array_sum(array_map('floatval', $counts));
+        $tierAmount = $this->tierBasis() === 'rent' ? $equivalents : $parcels;
+        $boostMultiplier = self::tierValue($this->boostTiers(), $tierAmount) ?: 1;
         $badgePercent = $this->badgePercent($badgeCount, $badgeExtraPercent);
         $badgeMultiplier = 1 + $badgePercent / 100;
 
@@ -97,6 +99,7 @@ class EarningsCalculator
             'parcels' => (int) array_sum(array_map('intval', $counts)),
             'counts' => $counts,
             'equivalents' => $equivalents,
+            'tier_amount' => $tierAmount,
             'base_per_second' => $base,
             'badge_count' => $badgeCount,
             'badge_percent' => $badgePercent,
@@ -109,7 +112,7 @@ class EarningsCalculator
             'per_day' => $perDay,
             'per_month' => $perDay * 365 / 12,
             'per_year' => $perDay * 365,
-            'next_boost_drop' => $this->nextBoostDrop($equivalents),
+            'next_boost_drop' => $this->nextBoostDrop($tierAmount),
         ];
     }
 
@@ -123,12 +126,18 @@ class EarningsCalculator
         return $this->calculate($counts, $owned->count(), (float) $owned->sum('boost_percent'));
     }
 
-    /** Where the next (lower) ad boost tier starts, in common-parcel equivalents, if any. */
-    public function nextBoostDrop(float $equivalents): ?array
+    /** 'parcels' (tiers by parcel count) or 'rent' (tiers by common-parcel equivalents). */
+    public function tierBasis(): string
+    {
+        return ($this->settings['boost_tier_basis'] ?? 'parcels') === 'rent' ? 'rent' : 'parcels';
+    }
+
+    /** Where the next (lower) ad boost tier starts, in the tier basis units, if any. */
+    public function nextBoostDrop(float $amount): ?array
     {
         foreach ($this->boostTiers() as $tier) {
-            if ($tier['from'] > $equivalents + 1e-9) {
-                return ['at' => $tier['from'], 'multiplier' => $tier['value'], 'away' => $tier['from'] - $equivalents];
+            if ($tier['from'] > $amount + 1e-9) {
+                return ['at' => $tier['from'], 'multiplier' => $tier['value'], 'away' => $tier['from'] - $amount];
             }
         }
 

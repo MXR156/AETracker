@@ -49,15 +49,30 @@ class EarningsCalculatorTest extends TestCase
         $off = 0.00002 * 1.05;
         $expected = $off * 18 * 3600 + $off * 50 * 6 * 3600;
         $this->assertEqualsWithDelta($expected, $r['per_day'], 1e-9);
-        $this->assertEqualsWithDelta(11, $r['next_boost_drop']['away'], 1e-9);
+        // Tiers count parcels by default: 15 parcels, so the 40x tier starts 16 parcels away.
+        $this->assertEqualsWithDelta(16, $r['next_boost_drop']['away'], 1e-9);
     }
 
-    public function test_boost_tier_is_based_on_rent_not_parcel_count(): void
+    public function test_boost_tier_can_be_based_on_rent_instead_of_parcel_count(): void
     {
-        // 20 legendaries = 80 common equivalents -> 30x tier even though it is only 20 parcels.
-        $r = $this->calc()->calculate(['legendary' => 20], 0);
+        // 20 legendaries = 80 common equivalents -> 30x tier on rent, 50x on parcel count.
+        $this->assertSame(30.0, $this->calc(['boost_tier_basis' => 'rent'])->calculate(['legendary' => 20], 0)['boost_multiplier']);
+        $this->assertSame(50.0, $this->calc()->calculate(['legendary' => 20], 0)['boost_multiplier']);
+    }
 
-        $this->assertSame(30.0, $r['boost_multiplier']);
+    public function test_real_tier_table_with_421_parcels_is_3x(): void
+    {
+        $settings = [
+            'rent_common' => '0.0000000011', 'rent_rare' => '0.0000000016', 'rent_epic' => '0.0000000022', 'rent_legendary' => '0.0000000044',
+            'boost_tiers' => "1:20\n61:15\n101:10\n151:8\n181:7\n221:6\n251:5\n301:4\n351:3\n451:2",
+        ];
+        $counts = ['common' => 370, 'rare' => 35, 'epic' => 12, 'legendary' => 4]; // 421 parcels, ~454 common equivalents
+
+        $byParcels = $this->calc($settings)->calculate($counts, 0);
+        $this->assertSame(3.0, $byParcels['boost_multiplier']);
+        $this->assertEqualsWithDelta(30, $byParcels['next_boost_drop']['away'], 1e-9);
+
+        $this->assertSame(2.0, $this->calc($settings + ['boost_tier_basis' => 'rent'])->calculate($counts, 0)['boost_multiplier']);
     }
 
     public function test_planner_sorts_by_payback_and_flags_tier_drops(): void

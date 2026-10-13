@@ -36,8 +36,16 @@
             <div class="field">
                 <label for="boost_tiers">Boost tiers</label>
                 <textarea id="boost_tiers" name="boost_tiers" rows="8">{{ $v('boost_tiers') }}</textarea>
-                <div class="hint">One tier per line as <code>from:multiplier</code>. "from" is in <em>common-parcel equivalents</em> (your base rent ÷ common rent),
-                    because Atlas Earth sets your boost from your rent per second. If you only own commons, that's just your parcel count.</div>
+                <div class="hint">One tier per line as <code>from:multiplier</code> - e.g. <code>351:3</code> means 351 or more gives 3× boost.</div>
+            </div>
+            <div class="field">
+                <label for="boost_tier_basis">Tiers are based on</label>
+                <select id="boost_tier_basis" name="boost_tier_basis">
+                    <option value="parcels" @selected($v('boost_tier_basis') === 'parcels')>Number of parcels owned</option>
+                    <option value="rent" @selected($v('boost_tier_basis') === 'rent')>Rent (common-parcel equivalents)</option>
+                </select>
+                <div class="hint">Parcels: the "from" numbers are your parcel count, as in the game's boost table.
+                    Rent: your base rent ÷ common rent, so rarer parcels count as more than one.</div>
             </div>
 
             <h2 style="margin-top:1.25rem">Badge boost</h2>
