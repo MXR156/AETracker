@@ -3,6 +3,7 @@
 use App\Http\Controllers\BadgeController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\HoldingController;
+use App\Http\Controllers\ImportController;
 use App\Http\Controllers\LocationController;
 use App\Http\Controllers\PlayerController;
 use App\Http\Controllers\PortfolioController;
@@ -15,6 +16,12 @@ Route::get('/', DashboardController::class)->name('dashboard');
 // Location leaderboards
 Route::resource('locations', LocationController::class);
 Route::resource('locations.snapshots', SnapshotController::class)->except(['index', 'show'])->shallow();
+
+// Import a leaderboard from the Atlas Earth web map (bookmarklet)
+Route::get('import', [ImportController::class, 'index'])->name('import.index');
+Route::post('import/atlas-earth', [ImportController::class, 'receive'])->name('import.receive');
+Route::get('import/{token}', [ImportController::class, 'review'])->name('import.review');
+Route::post('import/{token}', [ImportController::class, 'save'])->name('import.save');
 
 // Players
 Route::get('players', [PlayerController::class, 'index'])->name('players.index');

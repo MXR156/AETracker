@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Location extends Model
 {
-    protected $fillable = ['name', 'type', 'region', 'notes'];
+    protected $fillable = ['name', 'type', 'region', 'atlas_key', 'notes'];
 
     public function snapshots(): HasMany
     {

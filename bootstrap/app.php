@@ -12,7 +12,9 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        //
+        // The bookmarklet posts from the Atlas Earth site, so it can't send a CSRF token.
+        // This route only stages the data; saving it still needs a CSRF-protected form.
+        $middleware->validateCsrfTokens(except: ['import/atlas-earth']);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(

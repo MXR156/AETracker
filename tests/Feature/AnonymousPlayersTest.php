@@ -2,10 +2,10 @@
 
 namespace Tests\Feature;
 
-use App\Http\Controllers\SnapshotController;
 use App\Models\Location;
 use App\Models\Player;
 use App\Services\Leaderboard;
+use App\Services\SnapshotWriter;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -71,7 +71,7 @@ class AnonymousPlayersTest extends TestCase
 
     public function test_split_entries_numbering(): void
     {
-        [$named, $ghosts] = SnapshotController::splitEntries([
+        [$named, $ghosts] = SnapshotWriter::splitEntries([
             ['Bob', 10], ['anon', 2], ['Anonymous #1', 9], ['Anonymous', 20], ['bob', 11], ['Anonymous #4', 0],
         ]);
 

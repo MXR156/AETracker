@@ -3,10 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\Location;
-use App\Models\Player;
 use App\Models\Snapshot;
+use App\Services\SnapshotWriter;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
@@ -88,65 +87,13 @@ class SnapshotController extends Controller
         // Pasted lines come after the table rows, so they win for the same player.
         $lines = array_merge($lines, self::parsePaste($data['paste'] ?? ''));
 
-        [$counts, $ghosts] = self::splitEntries($lines);
-
-        if (! $counts && ! $ghosts) {
+        if (! SnapshotWriter::hasEntries($lines)) {
             throw ValidationException::withMessages(['rows' => 'Add at least one player with parcels.']);
         }
 
-        DB::transaction(function () use ($snapshot, $location, $data, $counts, $ghosts) {
-            $snapshot->fill(['recorded_on' => $data['recorded_on'], 'notes' => $data['notes'] ?? null])->save();
-            $snapshot->entries()->delete();
-            foreach ($counts as [$name, $parcels]) {
-                $snapshot->entries()->create(['player_id' => Player::findOrCreateByName($name)->id, 'parcels' => $parcels]);
-            }
-            foreach ($ghosts as $number => $parcels) {
-                $snapshot->entries()->create(['player_id' => Player::ghost($location, $number)->id, 'parcels' => $parcels]);
-            }
-        });
+        SnapshotWriter::save($snapshot, $location, $data['recorded_on'], $data['notes'] ?? null, $lines);
 
         return $snapshot;
-    }
-
-    /**
-     * Split [name, parcels] lines into named players and anonymous "ghost" players.
-     *
-     * Named players are matched case-insensitively (a later line wins). Every "Anonymous" line is a
-     * separate player: "Anonymous #2" keeps its number, and plain "Anonymous" lines get the lowest free
-     * numbers, biggest holder first - so a location's ghosts keep roughly the same numbers over time.
-     * Anyone on 0 parcels has left the board and is dropped.
-     *
-     * @param  array<int, array{0: string, 1: int}>  $lines
-     * @return array{0: array<string, array{0: string, 1: int}>, 1: array<int, int>}  [named, ghost number => parcels]
-     */
-    public static function splitEntries(array $lines): array
-    {
-        $named = [];
-        $ghosts = [];
-        $unnumbered = [];
-        foreach ($lines as [$name, $parcels]) {
-            if (! Player::isGhostName($name)) {
-                $named[mb_strtolower($name)] = [$name, $parcels];
-            } elseif (($number = Player::ghostNumber($name)) && $number > 0) {
-                $ghosts[$number] = $parcels;
-            } else {
-                $unnumbered[] = $parcels;
-            }
-        }
-
-        $ghosts = array_filter($ghosts, fn ($p) => $p > 0);
-        $unnumbered = array_filter($unnumbered, fn ($p) => $p > 0);
-        rsort($unnumbered);
-        $next = 1;
-        foreach ($unnumbered as $parcels) {
-            while (isset($ghosts[$next])) {
-                $next++;
-            }
-            $ghosts[$next] = $parcels;
-        }
-        ksort($ghosts);
-
-        return [array_filter($named, fn ($c) => $c[1] > 0), $ghosts];
     }
 
     /**

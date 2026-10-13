@@ -14,6 +14,7 @@
     </div>
     <div class="actions">
         <a href="{{ route('locations.snapshots.create', $location) }}" class="btn">+ Add snapshot</a>
+        <a href="{{ route('import.index') }}" class="btn btn-ghost">Import from Atlas Earth</a>
         <a href="{{ route('locations.edit', $location) }}" class="btn btn-ghost">Edit</a>
     </div>
 </div>

@@ -2,10 +2,10 @@
 
 namespace App\Console\Commands;
 
-use App\Http\Controllers\SnapshotController;
 use App\Models\Location;
 use App\Models\Player;
 use App\Models\Snapshot;
+use App\Services\SnapshotWriter;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use PDO;
@@ -66,13 +66,10 @@ class ImportLegacy extends Command
                 $snapshot = Snapshot::firstOrCreate(['location_id' => $location->id, 'recorded_on' => $group[0]['recorded_on']]);
                 $stats['snapshots'] += $snapshot->wasRecentlyCreated ? 1 : 0;
 
-                [$named, $ghosts] = SnapshotController::splitEntries(
-                    array_map(fn ($r) => [$r['username'], (int) $r['parcel_count']], $group)
+                $players = SnapshotWriter::resolve(
+                    $location,
+                    array_map(fn ($r) => [$r['username'], (int) $r['parcel_count']], $group),
                 );
-                $players = array_map(fn ($c) => [Player::findOrCreateByName($c[0]), $c[1]], array_values($named));
-                foreach ($ghosts as $number => $parcels) {
-                    $players[] = [Player::ghost($location, $number), $parcels];
-                }
 
                 foreach ($players as [$player, $parcels]) {
                     $entry = $snapshot->entries()->updateOrCreate(['player_id' => $player->id], ['parcels' => $parcels]);
