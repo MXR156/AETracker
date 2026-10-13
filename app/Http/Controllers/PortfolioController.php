@@ -64,14 +64,20 @@ class PortfolioController extends Controller
         $mix = $calc->expectedNewParcelMix();
         $curve = [];
         $max = max(100, (int) (array_sum($counts) * 1.5));
-        $step = max(1, (int) ceil($max / 60));
+        $step = max(1, (int) ceil($max / 200)); // fine enough to show each boost tier edge
         for ($extra = 0; $extra <= $max; $extra += $step) {
             $c = $counts;
             foreach ($mix as $rarity => $share) {
                 $c[$rarity] = ($c[$rarity] ?? 0) + $extra * $share;
             }
             $r = $calc->calculate($c, $badges);
-            $curve[] = ['parcels' => array_sum($counts) + $extra, 'per_day' => round($r['per_day'], 11), 'boost' => $r['boost_multiplier']];
+            $curve[] = [
+                'parcels' => array_sum($counts) + $extra,
+                'boosted' => round($r['on_per_day'], 11),   // boosted all day at the tier
+                'base' => round($r['off_per_day'], 11),     // no ad boost
+                'typical' => round($r['per_day'], 11),      // your usual boosted hours
+                'boost' => $r['boost_multiplier'],
+            ];
         }
 
         return view('portfolio.planner', [

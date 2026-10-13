@@ -58,10 +58,18 @@
     @endif
 </div>
 
+@php($hours = (float) $settings['boost_hours_per_day'])
 <div class="card">
-    <h2>Earnings as you add parcels</h2>
-    <p class="muted small" style="margin-top:0">The dips are where you drop into a lower ad-boost tier - buying just past a tier edge can lower your boosted earnings.</p>
-    <div class="chart-box"><canvas id="curve"></canvas></div>
+    <h2>Earnings per day as you add parcels - with ad boost</h2>
+    <p class="muted small" style="margin-top:0">Boosted all day at your tier (the "Per day" row in your earnings table){{ $hours < 24 ? ', with your typical '.ae_num($hours, 1).' boosted hours a day as a dashed line' : '' }}.
+        The dips are where you drop into a lower ad-boost tier - buying just past a tier edge can lower your boosted earnings.</p>
+    <div class="chart-box"><canvas id="curve-boosted"></canvas></div>
+</div>
+
+<div class="card">
+    <h2>Earnings per day as you add parcels - base (no ad boost)</h2>
+    <p class="muted small" style="margin-top:0">Rent with your badge boost only. This always goes up as you add parcels.</p>
+    <div class="chart-box"><canvas id="curve-base"></canvas></div>
 </div>
 
 <div class="notice">These are estimates. Rent rates, boost tiers and badge tiers change in Atlas Earth from time to time - keep them up to date on the <a href="{{ route('settings.edit') }}">Settings</a> page.</div>
@@ -71,22 +79,32 @@
 <script>
     (function () {
         const c = @json($curve);
-        const opts = AE.baseOptions();
-        opts.scales.x.title = { display: true, text: 'Parcels owned', color: AE.textColor() };
-        opts.scales.y.title = { display: true, text: 'Est. per day', color: AE.textColor() };
-        opts.plugins.tooltip = AE.moneyTooltip();
-        opts.scales.y2 = { position: 'right', beginAtZero: true, ticks: { color: AE.textColor() }, grid: { drawOnChartArea: false },
-            title: { display: true, text: 'Boost ×', color: AE.textColor() } };
-        new Chart(document.getElementById('curve'), {
-            type: 'line',
-            data: {
-                labels: c.map(r => Math.round(r.parcels)),
-                datasets: [
-                    { label: 'Est. per day', money: true, data: c.map(r => r.per_day), borderColor: AE.palette[0], backgroundColor: AE.palette[0], pointRadius: 0, tension: 0 },
-                    { label: 'Boost multiplier', data: c.map(r => r.boost), borderColor: AE.palette[2], backgroundColor: AE.palette[2], yAxisID: 'y2', stepped: true, pointRadius: 0, borderDash: [4, 4] },
-                ],
-            },
-            options: opts,
+        const labels = c.map(r => Math.round(r.parcels));
+        const line = (label, key, color, extra = {}) => Object.assign({
+            label, money: true, data: c.map(r => r[key]), borderColor: color, backgroundColor: color, pointRadius: 0, tension: 0,
+        }, extra);
+        const options = (withBoostAxis) => {
+            const opts = AE.baseOptions();
+            opts.scales.x.title = { display: true, text: 'Parcels owned', color: AE.textColor() };
+            opts.scales.y.title = { display: true, text: 'Est. per day', color: AE.textColor() };
+            opts.plugins.tooltip = AE.moneyTooltip();
+            if (withBoostAxis) {
+                opts.scales.y2 = { position: 'right', beginAtZero: true, ticks: { color: AE.textColor() }, grid: { drawOnChartArea: false },
+                    title: { display: true, text: 'Boost ×', color: AE.textColor() } };
+            }
+            return opts;
+        };
+
+        const boosted = [line('With ad boost (all day)', 'boosted', AE.palette[0])];
+        @if ($hours < 24)
+            boosted.push(line('Your typical day ({{ ae_num($hours, 1) }}h boosted)', 'typical', AE.palette[1], { borderDash: [6, 4] }));
+        @endif
+        boosted.push({ label: 'Boost multiplier', data: c.map(r => r.boost), borderColor: AE.palette[2], backgroundColor: AE.palette[2],
+            yAxisID: 'y2', stepped: true, pointRadius: 0, borderDash: [4, 4] });
+        new Chart(document.getElementById('curve-boosted'), { type: 'line', data: { labels, datasets: boosted }, options: options(true) });
+
+        new Chart(document.getElementById('curve-base'), {
+            type: 'line', data: { labels, datasets: [line('Base (no ad boost)', 'base', AE.palette[3])] }, options: options(false),
         });
     })();
 </script>

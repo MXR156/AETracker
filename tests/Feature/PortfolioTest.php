@@ -82,6 +82,22 @@ class PortfolioTest extends TestCase
         $this->assertMatchesRegularExpression('/\$[1-9][\d,]*\.\d{11}/', strip_tags($this->get('/my-parcels')->getContent()));
     }
 
+    public function test_planner_has_boosted_and_base_charts(): void
+    {
+        $this->post('/my-parcels/holdings', ['recorded_on' => '2026-10-01', 'common' => 100, 'rare' => 0, 'epic' => 0, 'legendary' => 0]);
+
+        $html = $this->get('/my-parcels/planner')->assertOk()
+            ->assertSee('curve-boosted')->assertSee('curve-base')
+            ->assertDontSee('Your typical day')               // 24h boosted by default
+            ->getContent();
+        preg_match('/const c = (\[.*?\]);/s', $html, $m);
+        $first = json_decode($m[1], true)[0];
+        $this->assertSame(100, $first['parcels']);
+        $this->assertEqualsWithDelta($first['base'] * 15, $first['boosted'], 1e-12); // 100 parcels = 15x tier (61-100)
+
+        $this->get('/my-parcels/planner?boost_hours=6')->assertOk()->assertSee('Your typical day (6h boosted)');
+    }
+
     public function test_settings_save_and_reset(): void
     {
         $this->put('/settings', array_merge(config('aetracker.defaults'), ['boost_hours_per_day' => 8]))
