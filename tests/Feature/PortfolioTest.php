@@ -43,6 +43,24 @@ class PortfolioTest extends TestCase
         $this->assertSame('21', Setting::allValues()['badges_owned']);
     }
 
+    public function test_earnings_table_matches_the_reference_layout(): void
+    {
+        Setting::put('badges_owned', '5');
+        $this->post('/my-parcels/holdings', ['recorded_on' => '2026-10-01', 'common' => 1, 'rare' => 0, 'epic' => 0, 'legendary' => 0]);
+
+        $this->get('/my-parcels')->assertOk()
+            ->assertSee('includes your +5% badge boost')
+            ->assertSee('With ad boost (20×)')
+            ->assertSee('$0.00000419580')
+            ->assertSee('$0.00008391600')
+            ->assertSee('$0.01409788800')
+            ->assertSee('(27.75d + 2.67SBd)', false)
+            ->assertSee('$0.06931461600')
+            ->assertSee('(333.00d + 32.00SBd)', false)
+            ->assertSee('$0.83177539200')
+            ->assertDontSee('Your typical');
+    }
+
     public function test_settings_save_and_reset(): void
     {
         $this->put('/settings', array_merge(config('aetracker.defaults'), ['boost_hours_per_day' => 8]))

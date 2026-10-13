@@ -30,7 +30,7 @@
         <div class="card">
             <h2>Ad boost</h2>
             <div class="field">
-                <label for="boost_hours_per_day">Hours boosted per day (typical)</label>
+                <label for="boost_hours_per_day">Hours boosted per day (typical, 24 = always)</label>
                 <input type="number" step="0.5" min="0" max="24" id="boost_hours_per_day" name="boost_hours_per_day" value="{{ $v('boost_hours_per_day') }}">
             </div>
             <div class="field">
@@ -47,6 +47,14 @@
                 <div class="hint">Parcels: the "from" numbers are your parcel count, as in the game's boost table.
                     Rent: your base rent ÷ common rent, so rarer parcels count as more than one.</div>
             </div>
+
+            <div class="form-row">
+                <div class="field"><label for="super_boost_days_per_year">Super Boost days a year</label>
+                    <input type="number" step="any" min="0" max="365" id="super_boost_days_per_year" name="super_boost_days_per_year" value="{{ $v('super_boost_days_per_year') }}"></div>
+                <div class="field"><label for="super_boost_multiplier">Super Boost multiplier</label>
+                    <input type="number" step="any" min="0" id="super_boost_multiplier" name="super_boost_multiplier" value="{{ $v('super_boost_multiplier') }}"></div>
+            </div>
+            <div class="hint" style="margin-top:-.5rem">Days when the ad boost is raised for everyone (e.g. 32 days at 50×). Set days to 0 to ignore them.</div>
 
             <h2 style="margin-top:1.25rem">Badge boost</h2>
             <div class="field">

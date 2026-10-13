@@ -28,35 +28,41 @@
     </div>
 @endif
 
+@php($m = fn ($v) => ae_money($v, abs($v) >= 1 ? 4 : 11))
+@php($typical = $e['boost_hours'] < 24)
+@php($sb = $e['super_days'] > 0)
+@php($fullDay = $e['on_per_day'])
+@php($fullSuperDay = $e['super_per_second'] * 86400)
 <div class="card table-wrap">
-    <h2>Earnings breakdown</h2>
+    <h2>Earnings <span class="muted small" style="font-weight:400">(includes your +{{ ae_num($e['badge_percent'], 2) }}% badge boost)</span></h2>
     <table>
-        <thead><tr><th></th><th class="num">Per second</th><th class="num">Per hour</th><th class="num">Per day</th><th class="num">Per month</th><th class="num">Per year</th></tr></thead>
+        <thead><tr>
+            <th>Scenario</th><th class="num">Base</th><th class="num">With ad boost ({{ ae_num($e['boost_multiplier'], 2) }}×)</th>
+            @if ($typical)<th class="num">Your typical ({{ ae_num($e['boost_hours'], 1) }}h boosted)</th>@endif
+        </tr></thead>
         <tbody>
-        @foreach ([
-            ['Base rent (no boosts)', $e['base_per_second']],
-            ['Off boost (with badges)', $e['off_per_second']],
-            ['On ad boost (×'.ae_num($e['boost_multiplier'], 2).')', $e['on_per_second']],
-        ] as [$label, $ps])
+        @foreach ([['Per second', 1], ['Per hour', 3600], ['Per day', 86400], ['Per week', 604800]] as [$label, $seconds])
             <tr>
                 <td>{{ $label }}</td>
-                <td class="num">{{ ae_money($ps, 10) }}</td>
-                <td class="num">{{ ae_money($ps * 3600) }}</td>
-                <td class="num">{{ ae_money($ps * 86400) }}</td>
-                <td class="num">{{ ae_money($ps * 86400 * 365 / 12) }}</td>
-                <td class="num">{{ ae_money($ps * 86400 * 365) }}</td>
+                <td class="num">{{ $m($e['off_per_second'] * $seconds) }}</td>
+                <td class="num">{{ $m($e['on_per_second'] * $seconds) }}</td>
+                @if ($typical)<td class="num">{{ $m($e['per_day'] / 86400 * $seconds) }}</td>@endif
             </tr>
         @endforeach
-        <tr>
-            <td><strong>Your typical day</strong> <span class="muted small">({{ ae_num($e['boost_hours'], 1) }}h boosted)</span></td>
-            <td class="num">{{ ae_money($e['per_day'] / 86400, 10) }}</td>
-            <td class="num">{{ ae_money($e['per_day'] / 24) }}</td>
-            <td class="num"><strong>{{ ae_money($e['per_day']) }}</strong></td>
-            <td class="num"><strong>{{ ae_money($e['per_month']) }}</strong></td>
-            <td class="num"><strong>{{ ae_money($e['per_year']) }}</strong></td>
-        </tr>
+        @foreach ([['Per month', 12], ['Per year', 1]] as [$label, $div])
+            <tr>
+                <td>{{ $label }} <span class="muted small nowrap">({{ number_format($e['normal_days'] / $div, 2).'d'.($sb ? ' + '.number_format($e['super_days'] / $div, 2).'SBd' : '') }})</span></td>
+                <td class="num">{{ $m($e['off_per_day'] * 365 / $div) }}</td>
+                <td class="num"><strong>{{ $m(($e['normal_days'] * $fullDay + $e['super_days'] * $fullSuperDay) / $div) }}</strong></td>
+                @if ($typical)<td class="num">{{ $m($e['per_year'] / $div) }}</td>@endif
+            </tr>
+        @endforeach
         </tbody>
     </table>
+    <p class="muted small" style="margin-bottom:0">
+        Base = no ad boost. With ad boost = boosted all day at your {{ ae_num($e['boost_multiplier'], 2) }}× tier{{ $sb ? ', plus '.ae_num($e['super_days'], 2).' Super Boost days (SBd) a year at '.ae_num($e['super_multiplier'], 2).'×' : '' }}.
+        Month = a twelfth of a year. Change these in <a href="{{ route('settings.edit') }}">Settings</a>.
+    </p>
 </div>
 
 <div class="grid grid-2">

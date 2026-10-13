@@ -27,6 +27,7 @@ class SettingsController extends Controller
             $rules[$key] ??= ['required', 'numeric', 'min:0'];
         }
         $rules['boost_hours_per_day'][] = 'max:24';
+        $rules['super_boost_days_per_year'][] = 'max:365';
         $data = $request->validate($rules);
 
         if (! EarningsCalculator::parseTiers($data['boost_tiers'])) {

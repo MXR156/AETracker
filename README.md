@@ -81,7 +81,12 @@ badges     = 1 + (badge tier % for the number of badges you own) / 100
 boost      = ad boost multiplier for your tier: by number of parcels (default), or by base rent ÷ common rent
              ("common-parcel equivalents") if you set "Tiers are based on: Rent" in Settings
 per day    = base × badges × [(24 − boosted hours) + boosted hours × boost] × 3600
+SB day     = the same, with the Super Boost multiplier (e.g. 50×) instead of your tier's boost
+per year   = (365 − SB days) × per day + SB days × SB day      e.g. 333d + 32SBd
+per month  = per year ÷ 12                                    e.g. 27.75d + 2.67SBd
 ```
+
+My Parcels shows a Base column (no ad boost) and a With ad boost column (boosted all day). If you set fewer than 24 boosted hours a day, it adds a "Your typical" column too.
 
 The planner gives new parcels an expected rarity mix based on the odds in Settings.
 

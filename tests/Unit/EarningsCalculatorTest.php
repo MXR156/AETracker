@@ -97,6 +97,35 @@ class EarningsCalculatorTest extends TestCase
         $this->assertGreaterThan(0, $badgeOption['gain_per_day']);
     }
 
+    public function test_matches_the_reference_earnings_table_for_one_common_and_five_badges(): void
+    {
+        $calc = $this->calc([
+            'rent_common' => '0.00000000111',
+            'boost_tiers' => "1:20\n61:15\n101:10\n151:8\n181:7\n221:6\n251:5\n301:4\n351:3\n451:2",
+            'badge_tiers' => "1:5\n11:10\n31:15\n61:20\n101:25",
+            'boost_hours_per_day' => '24',
+            'super_boost_days_per_year' => '32',
+            'super_boost_multiplier' => '50',
+        ]);
+        $r = $calc->calculate(['common' => 1], 5);
+
+        // Base column (badge boost only)
+        $this->assertEqualsWithDelta(0.0000041958, $r['off_per_second'] * 3600, 1e-15);
+        $this->assertEqualsWithDelta(0.0001006992, $r['off_per_day'], 1e-15);
+        $this->assertEqualsWithDelta(0.0007048944, $r['off_per_day'] * 7, 1e-15);
+        $this->assertEqualsWithDelta(0.003062934, $r['off_per_day'] * 365 / 12, 1e-14);
+        $this->assertEqualsWithDelta(0.036755208, $r['off_per_day'] * 365, 1e-14);
+
+        // With ad boost column (20x all day, 32 Super Boost days at 50x)
+        $this->assertSame(20.0, $r['boost_multiplier']);
+        $this->assertEqualsWithDelta(0.000083916, $r['on_per_second'] * 3600, 1e-15);
+        $this->assertEqualsWithDelta(0.002013984, $r['per_day'], 1e-14);
+        $this->assertEqualsWithDelta(0.014097888, $r['per_week'], 1e-14);
+        $this->assertEqualsWithDelta(0.069314616, $r['per_month'], 1e-13);
+        $this->assertEqualsWithDelta(0.831775392, $r['per_year'], 1e-12);
+        $this->assertSame(333.0, $r['normal_days']);
+    }
+
     public function test_badge_count_picks_the_tier(): void
     {
         $calc = $this->calc(['badge_tiers' => "1:5\n11:10\n31:15\n61:20\n101:25", 'badges_owned' => '21']);

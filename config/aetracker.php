@@ -26,7 +26,7 @@ return [
         'currency_symbol' => '$',
 
         // Base rent per parcel, per second (in-game dollars), before any boosts.
-        'rent_common' => '0.0000000011',
+        'rent_common' => '0.00000000111',
         'rent_rare' => '0.0000000016',
         'rent_epic' => '0.0000000022',
         'rent_legendary' => '0.0000000044',
@@ -37,8 +37,12 @@ return [
         'odds_epic' => '4',
         'odds_legendary' => '1',
 
-        // How many hours a day you are typically on ad boost.
-        'boost_hours_per_day' => '6',
+        // How many hours a day you are typically on ad boost (24 = always boosted).
+        'boost_hours_per_day' => '24',
+
+        // Super Boost days: days a year when the ad boost is raised to this multiplier for everyone.
+        'super_boost_days_per_year' => '32',
+        'super_boost_multiplier' => '50',
 
         // Ad boost multiplier tiers, one line per tier: "from:multiplier". The highest "from" you meet applies.
         'boost_tiers' => "1:20\n61:15\n101:10\n151:8\n181:7\n221:6\n251:5\n301:4\n351:3\n451:2",

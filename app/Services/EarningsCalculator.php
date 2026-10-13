@@ -103,7 +103,17 @@ class EarningsCalculator
 
         $off = $base * $badgeMultiplier;
         $on = $off * $boostMultiplier;
+
+        // Super Boost days: the ad boost multiplier is raised (e.g. 50x) for a number of days a year.
+        $superDays = max(0, min(365, (float) ($this->settings['super_boost_days_per_year'] ?? 0)));
+        $superMultiplier = max(0, (float) ($this->settings['super_boost_multiplier'] ?? 0)) ?: $boostMultiplier;
+        $super = $off * $superMultiplier;
+        $normalDays = 365 - $superDays;
+
+        // A normal day and a Super Boost day, with your usual boosted hours.
         $perDay = $off * (24 - $boostHours) * 3600 + $on * $boostHours * 3600;
+        $perSuperDay = $off * (24 - $boostHours) * 3600 + $super * $boostHours * 3600;
+        $perYear = $normalDays * $perDay + $superDays * $perSuperDay;
 
         return [
             'parcels' => (int) array_sum(array_map('intval', $counts)),
@@ -119,9 +129,16 @@ class EarningsCalculator
             'on_per_second' => $on,
             'off_per_day' => $off * 86400,
             'on_per_day' => $on * 86400,
+            'super_multiplier' => $superMultiplier,
+            'super_per_second' => $super,
+            'super_days' => $superDays,
+            'normal_days' => $normalDays,
             'per_day' => $perDay,
-            'per_month' => $perDay * 365 / 12,
-            'per_year' => $perDay * 365,
+            'per_super_day' => $perSuperDay,
+            'per_week' => $perDay * 7,
+            'per_month' => $perYear / 12,
+            'per_year' => $perYear,
+            'avg_per_day' => $perYear / 365,
             'next_boost_drop' => $this->nextBoostDrop($tierAmount),
             'next_badge_tier' => $this->nextBadgeTier($badgeCount),
         ];
@@ -225,7 +242,8 @@ class EarningsCalculator
 
     private function option(string $label, string $kind, float $cost, array $now, array $after): array
     {
-        $gain = $after['per_day'] - $now['per_day'];
+        // Average day over the year, so Super Boost days count too.
+        $gain = $after['avg_per_day'] - $now['avg_per_day'];
 
         return [
             'label' => $label,
