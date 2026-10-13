@@ -18,7 +18,7 @@
                 <div class="field">
                     <label for="rent_{{ $r }}">{{ ucfirst($r) }}</label>
                     <input id="rent_{{ $r }}" name="rent_{{ $r }}" value="{{ $v('rent_'.$r) }}" inputmode="decimal">
-                    <div class="hint">≈ {{ ae_money((float) $v('rent_'.$r) * 86400 * 365, 4) }} per year, unboosted</div>
+                    <div class="hint">≈ {{ ae_earn((float) $v('rent_'.$r) * 86400 * 365) }} per year, unboosted</div>
                 </div>
             @endforeach
             <div class="field">

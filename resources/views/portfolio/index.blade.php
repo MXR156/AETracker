@@ -17,7 +17,7 @@
         <div class="sub">@foreach ($calc::RARITIES as $r){{ $e['counts'][$r] ?? 0 }} {{ substr($r, 0, 1) === 'l' ? 'leg' : substr($r, 0, 3) }}@if (! $loop->last) · @endif @endforeach</div></div>
     <div class="stat"><div class="label">Badges</div><div class="value">{{ number_format($badges) }}</div><div class="sub">+{{ ae_num($e['badge_percent'], 2) }}% rent</div></div>
     <div class="stat"><div class="label">Ad boost</div><div class="value">{{ ae_num($e['boost_multiplier'], 2) }}×</div><div class="sub">{{ ae_num($e['boost_hours'], 1) }} h/day boosted · tier from {{ number_format($e['tier_amount']) }} {{ $calc->tierBasis() === 'rent' ? 'equiv.' : 'parcels' }}</div></div>
-    <div class="stat"><div class="label">Est. per day</div><div class="value">{{ ae_money($e['per_day']) }}</div><div class="sub">{{ ae_money($e['per_year'], 2) }} / year</div></div>
+    <div class="stat"><div class="label">Est. per day</div><div class="value">{{ ae_earn($e['per_day']) }}</div><div class="sub">{{ ae_earn($e['per_year']) }} / year</div></div>
 </div>
 
 @if ($e['next_boost_drop'] && $e['parcels'] > 0)
@@ -28,7 +28,7 @@
     </div>
 @endif
 
-@php($m = fn ($v) => ae_money($v, abs($v) >= 1 ? 4 : 11))
+@php($m = fn ($v) => ae_earn($v))
 @php($typical = $e['boost_hours'] < 24)
 @php($sb = $e['super_days'] > 0)
 @php($fullDay = $e['on_per_day'])
@@ -185,6 +185,7 @@
         const h = @json($history);
         const opts = AE.baseOptions();
         opts.scales.y.title = { display: true, text: 'Parcels', color: AE.textColor() };
+        opts.plugins.tooltip = AE.moneyTooltip();
         opts.scales.y2 = { position: 'right', beginAtZero: true, ticks: { color: AE.textColor() }, grid: { drawOnChartArea: false },
             title: { display: true, text: 'Est. per day', color: AE.textColor() } };
         new Chart(document.getElementById('history'), {
@@ -193,7 +194,7 @@
                 labels: h.map(r => r.date),
                 datasets: [
                     { label: 'Parcels', data: h.map(r => r.parcels), borderColor: AE.palette[0], backgroundColor: AE.palette[0], stepped: true },
-                    { label: 'Est. per day', data: h.map(r => r.per_day), borderColor: AE.palette[1], backgroundColor: AE.palette[1], yAxisID: 'y2', stepped: true },
+                    { label: 'Est. per day', money: true, data: h.map(r => r.per_day), borderColor: AE.palette[1], backgroundColor: AE.palette[1], yAxisID: 'y2', stepped: true },
                 ],
             },
             options: opts,

@@ -20,7 +20,7 @@
         <div class="stat"><div class="label">My locations</div><div class="value">{{ $leading->count() + $chasing->count() }}</div><div class="sub">{{ number_format($leading->sum(fn($b) => $b->rowFor($me)->parcels) + $chasing->sum(fn($b) => $b->rowFor($me)->parcels)) }} parcels on boards</div></div>
         <div class="stat"><div class="label">Leader in</div><div class="value">{{ $leading->count() }}</div><div class="sub">of {{ $leading->count() + $chasing->count() }}</div></div>
     @endif
-    <div class="stat"><div class="label">Est. earnings / day</div><div class="value">{{ ae_money($earnings['per_day']) }}</div><div class="sub">{{ ae_money($earnings['per_month'], 2) }} / month · <a href="{{ route('portfolio.index') }}">details</a></div></div>
+    <div class="stat"><div class="label">Est. earnings / day</div><div class="value">{{ ae_earn($earnings['per_day']) }}</div><div class="sub">{{ ae_earn($earnings['per_month']) }} / month · <a href="{{ route('portfolio.index') }}">details</a></div></div>
 </div>
 
 <div class="grid grid-2">

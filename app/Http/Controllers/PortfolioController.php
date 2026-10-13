@@ -20,7 +20,7 @@ class PortfolioController extends Controller
         $history = $holdings->reverse()->values()->map(fn ($h) => [
             'date' => $h->recorded_on->format('Y-m-d'),
             'parcels' => $h->total(),
-            'per_day' => round($calc->calculate($h->counts(), $badges)['per_day'], 6),
+            'per_day' => round($calc->calculate($h->counts(), $badges)['per_day'], 11),
         ]);
 
         return view('portfolio.index', [
@@ -71,7 +71,7 @@ class PortfolioController extends Controller
                 $c[$rarity] = ($c[$rarity] ?? 0) + $extra * $share;
             }
             $r = $calc->calculate($c, $badges);
-            $curve[] = ['parcels' => array_sum($counts) + $extra, 'per_day' => round($r['per_day'], 6), 'boost' => $r['boost_multiplier']];
+            $curve[] = ['parcels' => array_sum($counts) + $extra, 'per_day' => round($r['per_day'], 11), 'boost' => $r['boost_multiplier']];
         }
 
         return view('portfolio.planner', [

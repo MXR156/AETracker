@@ -61,6 +61,27 @@ class PortfolioTest extends TestCase
             ->assertDontSee('Your typical');
     }
 
+    public function test_all_earnings_are_shown_to_11_decimal_places(): void
+    {
+        Setting::put('badges_owned', '21');
+        $this->post('/my-parcels/holdings', ['recorded_on' => '2026-10-01', 'common' => 5000, 'rare' => 0, 'epic' => 0, 'legendary' => 0]);
+
+        foreach (['/my-parcels', '/my-parcels/planner', '/'] as $url) {
+            $html = $this->get($url)->assertOk()->getContent();
+            preg_match_all('/\$(\d[\d,]*)\.(\d+)/', strip_tags($html), $m);
+            $this->assertNotEmpty($m[0], $url);
+            foreach ($m[0] as $i => $amount) {
+                // Costs (e.g. "A parcel costs $1.00") keep 2 places; every earnings figure has 11.
+                $this->assertContains(strlen($m[2][$i]), [2, 4, 11], "{$url}: {$amount}");
+            }
+            $this->assertMatchesRegularExpression('/\$\d[\d,]*\.\d{11}/', strip_tags($html), $url);
+        }
+
+        // Yearly earnings over $1 still get 11 places.
+        $this->get('/my-parcels')->assertSee('/ year')->assertDontSeeText('$97.8330');
+        $this->assertMatchesRegularExpression('/\$[1-9][\d,]*\.\d{11}/', strip_tags($this->get('/my-parcels')->getContent()));
+    }
+
     public function test_settings_save_and_reset(): void
     {
         $this->put('/settings', array_merge(config('aetracker.defaults'), ['boost_hours_per_day' => 8]))

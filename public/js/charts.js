@@ -24,6 +24,17 @@ window.AE = {
         }, extra);
     },
 
+    // Earnings are shown to 11 decimal places, e.g. $0.00000000117.
+    money(v) {
+        if (v === null || v === undefined) return '';
+        return (v < 0 ? '-' : '') + (window.AE_CURRENCY || '$') + Math.abs(v).toFixed(11);
+    },
+
+    // Tooltip callback: format datasets flagged with `money: true` as earnings.
+    moneyTooltip() {
+        return { callbacks: { label: ctx => ctx.dataset.label + ': ' + (ctx.dataset.money ? AE.money(ctx.parsed.y) : ctx.formattedValue) } };
+    },
+
     // Lines per player; "me" is drawn thicker and dashed so it stands out.
     playerLines(el, data) {
         const datasets = data.datasets.map((d, i) => {

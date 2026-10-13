@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="{{ asset('css/app.css') }}">
     <script src="{{ asset('js/chart.umd.min.js') }}"></script>
     <script src="{{ asset('js/charts.js') }}"></script>
+    <script>window.AE_CURRENCY = @json(ae_currency());</script>
 </head>
 <body>
 <header class="top">

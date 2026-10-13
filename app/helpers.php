@@ -15,6 +15,21 @@ if (! function_exists('ae_money')) {
     }
 }
 
+if (! function_exists('ae_earn')) {
+    /** Earnings are always shown to 11 decimal places, e.g. $0.00000000117. */
+    function ae_earn(?float $value): string
+    {
+        return ae_money($value, 11);
+    }
+}
+
+if (! function_exists('ae_currency')) {
+    function ae_currency(): string
+    {
+        return Setting::allValues()['currency_symbol'] ?? '$';
+    }
+}
+
 if (! function_exists('ae_change')) {
     /** Render a +/- change as a coloured span. */
     function ae_change(?int $change, bool $isNew = false): string

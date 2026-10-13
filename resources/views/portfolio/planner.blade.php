@@ -23,11 +23,11 @@
 </form>
 
 <div class="stats">
-    <div class="stat"><div class="label">Now</div><div class="value">{{ ae_money($now['per_day']) }}<span class="muted small"> /day</span></div>
+    <div class="stat"><div class="label">Now</div><div class="value">{{ ae_earn($now['per_day']) }}<span class="muted small"> /day</span></div>
         <div class="sub">{{ number_format($now['parcels']) }} parcels · {{ ae_num($now['boost_multiplier']) }}× boost · +{{ ae_num($now['badge_percent']) }}% badges</div></div>
     @if ($best)
         <div class="stat" style="grid-column: span 2"><div class="label">Best value right now</div><div class="value">{{ $best['label'] }}</div>
-            <div class="sub">+{{ ae_money($best['gain_per_day']) }}/day for {{ ae_money($best['cost'], 2) }} · pays back in {{ ae_days($best['payback_days']) }}</div></div>
+            <div class="sub">+{{ ae_earn($best['gain_per_day']) }}/day for {{ ae_money($best['cost'], 2) }} · pays back in {{ ae_days($best['payback_days']) }}</div></div>
     @endif
 </div>
 
@@ -40,9 +40,9 @@
             <tr @class(['me' => $best && $o['label'] === $best['label']])>
                 <td>{{ $o['label'] }}</td>
                 <td class="num">{{ $o['kind'] === 'badge' && $calc->badgeCost() <= 0 ? '–' : ae_money($o['cost'], 2) }}</td>
-                <td class="num">{!! $o['gain_per_day'] >= 0 ? '<span class="up">+'.e(ae_money($o['gain_per_day'])).'</span>' : '<span class="down">'.e(ae_money($o['gain_per_day'])).'</span>' !!}</td>
-                <td class="num hide-sm">{{ ae_money($o['gain_per_year'], 2) }}</td>
-                <td class="num">{{ ae_money($o['after']['per_day']) }}</td>
+                <td class="num">{!! $o['gain_per_day'] >= 0 ? '<span class="up">+'.e(ae_earn($o['gain_per_day'])).'</span>' : '<span class="down">'.e(ae_earn($o['gain_per_day'])).'</span>' !!}</td>
+                <td class="num hide-sm">{{ ae_earn($o['gain_per_year']) }}</td>
+                <td class="num">{{ ae_earn($o['after']['per_day']) }}</td>
                 <td class="num">{{ ae_days($o['payback_days']) }}</td>
                 <td class="hide-sm small">
                     @if ($o['boost_changed'])<span class="chip chip-gold">boost {{ ae_num($now['boost_multiplier']) }}× → {{ ae_num($o['after']['boost_multiplier']) }}×</span>@endif
@@ -74,6 +74,7 @@
         const opts = AE.baseOptions();
         opts.scales.x.title = { display: true, text: 'Parcels owned', color: AE.textColor() };
         opts.scales.y.title = { display: true, text: 'Est. per day', color: AE.textColor() };
+        opts.plugins.tooltip = AE.moneyTooltip();
         opts.scales.y2 = { position: 'right', beginAtZero: true, ticks: { color: AE.textColor() }, grid: { drawOnChartArea: false },
             title: { display: true, text: 'Boost ×', color: AE.textColor() } };
         new Chart(document.getElementById('curve'), {
@@ -81,7 +82,7 @@
             data: {
                 labels: c.map(r => Math.round(r.parcels)),
                 datasets: [
-                    { label: 'Est. per day', data: c.map(r => r.per_day), borderColor: AE.palette[0], backgroundColor: AE.palette[0], pointRadius: 0, tension: 0 },
+                    { label: 'Est. per day', money: true, data: c.map(r => r.per_day), borderColor: AE.palette[0], backgroundColor: AE.palette[0], pointRadius: 0, tension: 0 },
                     { label: 'Boost multiplier', data: c.map(r => r.boost), borderColor: AE.palette[2], backgroundColor: AE.palette[2], yAxisID: 'y2', stepped: true, pointRadius: 0, borderDash: [4, 4] },
                 ],
             },
