@@ -36,6 +36,8 @@ class PlayerController extends Controller
         $myLocations = $me ? collect($positions[$me->id] ?? [])->pluck('location.id')->all() : [];
 
         $players = Player::query()
+            ->with('location')
+            ->when(! $request->boolean('anonymous'), fn ($q) => $q->real())
             ->when(trim((string) $request->query('q')), fn ($q, $s) => $q->where('username', 'like', "%{$s}%"))
             ->get()
             ->map(function ($player) use ($positions, $myLocations) {
@@ -78,7 +80,11 @@ class PlayerController extends Controller
     public function update(Request $request, Player $player)
     {
         $data = $request->validate([
-            'username' => ['required', 'string', 'max:255', Rule::unique('players')->ignore($player->id)],
+            'username' => [
+                'required', 'string', 'max:255',
+                Rule::unique('players')->ignore($player->id)
+                    ->where(fn ($q) => $player->isGhost() ? $q->where('location_id', $player->location_id) : $q->whereNull('location_id')),
+            ],
             'notes' => ['nullable', 'string'],
         ]);
         $player->update($data);
@@ -88,6 +94,9 @@ class PlayerController extends Controller
 
     public function markMe(Player $player)
     {
+        if ($player->isGhost()) {
+            return back()->withErrors(['player' => 'An anonymous player can\'t be you.']);
+        }
         Player::where('is_me', true)->update(['is_me' => false]);
         $player->update(['is_me' => true]);
 

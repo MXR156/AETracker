@@ -78,36 +78,75 @@ class SnapshotController extends Controller
             'recorded_on.unique' => 'There is already a snapshot for this location on that date - edit that one instead.',
         ]);
 
-        $counts = [];
+        $lines = [];
         foreach ($data['rows'] ?? [] as $row) {
             $name = trim((string) ($row['username'] ?? ''));
-            if ($name !== '' && ($row['parcels'] ?? '') !== '' && $row['parcels'] !== null) {
-                $counts[mb_strtolower($name)] = [$name, (int) $row['parcels']];
+            if ($name !== '' && ($row['parcels'] ?? null) !== null) {
+                $lines[] = [$name, (int) $row['parcels']];
             }
         }
-        // Pasted lines win over the table rows for the same player.
-        foreach (self::parsePaste($data['paste'] ?? '') as [$name, $parcels]) {
-            $counts[mb_strtolower($name)] = [$name, $parcels];
-        }
-        // A player on 0 parcels has left the board.
-        $counts = array_filter($counts, fn ($c) => $c[1] > 0);
+        // Pasted lines come after the table rows, so they win for the same player.
+        $lines = array_merge($lines, self::parsePaste($data['paste'] ?? ''));
 
-        if (! $counts) {
+        [$counts, $ghosts] = self::splitEntries($lines);
+
+        if (! $counts && ! $ghosts) {
             throw ValidationException::withMessages(['rows' => 'Add at least one player with parcels.']);
         }
 
-        DB::transaction(function () use ($snapshot, $data, $counts) {
+        DB::transaction(function () use ($snapshot, $location, $data, $counts, $ghosts) {
             $snapshot->fill(['recorded_on' => $data['recorded_on'], 'notes' => $data['notes'] ?? null])->save();
             $snapshot->entries()->delete();
             foreach ($counts as [$name, $parcels]) {
-                $snapshot->entries()->create([
-                    'player_id' => Player::findOrCreateByName($name)->id,
-                    'parcels' => $parcels,
-                ]);
+                $snapshot->entries()->create(['player_id' => Player::findOrCreateByName($name)->id, 'parcels' => $parcels]);
+            }
+            foreach ($ghosts as $number => $parcels) {
+                $snapshot->entries()->create(['player_id' => Player::ghost($location, $number)->id, 'parcels' => $parcels]);
             }
         });
 
         return $snapshot;
+    }
+
+    /**
+     * Split [name, parcels] lines into named players and anonymous "ghost" players.
+     *
+     * Named players are matched case-insensitively (a later line wins). Every "Anonymous" line is a
+     * separate player: "Anonymous #2" keeps its number, and plain "Anonymous" lines get the lowest free
+     * numbers, biggest holder first - so a location's ghosts keep roughly the same numbers over time.
+     * Anyone on 0 parcels has left the board and is dropped.
+     *
+     * @param  array<int, array{0: string, 1: int}>  $lines
+     * @return array{0: array<string, array{0: string, 1: int}>, 1: array<int, int>}  [named, ghost number => parcels]
+     */
+    public static function splitEntries(array $lines): array
+    {
+        $named = [];
+        $ghosts = [];
+        $unnumbered = [];
+        foreach ($lines as [$name, $parcels]) {
+            if (! Player::isGhostName($name)) {
+                $named[mb_strtolower($name)] = [$name, $parcels];
+            } elseif (($number = Player::ghostNumber($name)) && $number > 0) {
+                $ghosts[$number] = $parcels;
+            } else {
+                $unnumbered[] = $parcels;
+            }
+        }
+
+        $ghosts = array_filter($ghosts, fn ($p) => $p > 0);
+        $unnumbered = array_filter($unnumbered, fn ($p) => $p > 0);
+        rsort($unnumbered);
+        $next = 1;
+        foreach ($unnumbered as $parcels) {
+            while (isset($ghosts[$next])) {
+                $next++;
+            }
+            $ghosts[$next] = $parcels;
+        }
+        ksort($ghosts);
+
+        return [array_filter($named, fn ($c) => $c[1] > 0), $ghosts];
     }
 
     /**

@@ -75,7 +75,8 @@
                     <tr @class(['me' => $row->player->is_me])>
                         <td><span @class(['rank', 'rank-1' => $row->rank === 1])>{{ $row->rank === 1 ? '👑' : $row->rank }}</span></td>
                         <td><a href="{{ route('players.show', $row->player) }}">{{ $row->player->username }}</a>
-                            @if ($row->player->is_me)<span class="chip">me</span>@endif</td>
+                            @if ($row->player->is_me)<span class="chip">me</span>@endif
+                            @if ($row->player->isGhost())<span class="chip chip-muted" title="Deleted account or no name set">anon</span>@endif</td>
                         <td class="num"><strong>{{ number_format($row->parcels) }}</strong></td>
                         <td class="num">{!! ae_change($row->change, $row->is_new) !!}</td>
                         <td class="num hide-sm">{!! ae_change($row->since_first) !!} <span class="muted small">({{ $row->first_seen->format('j M y') }})</span></td>

@@ -6,12 +6,14 @@
 </div>
 
 <form class="filters" method="get">
+    @if (request('min'))<input type="hidden" name="min" value="{{ request('min') }}">@endif
     <input type="search" name="q" value="{{ request('q') }}" placeholder="Search username">
     <span class="tabs">
         @foreach (['' => 'All', '2' => 'In 2+ locations', '3' => 'In 3+ locations'] as $key => $label)
             <a href="{{ request()->fullUrlWithQuery(['min' => $key ?: null]) }}" @class(['active' => (string) request('min') === (string) $key])>{{ $label }}</a>
         @endforeach
     </span>
+    <label class="small" style="font-weight:400;margin:0"><input type="checkbox" name="anonymous" value="1" @checked(request()->boolean('anonymous')) onchange="this.form.submit()"> Show anonymous</label>
     <button class="btn btn-ghost btn-sm">Search</button>
 </form>
 
@@ -24,7 +26,8 @@
         @forelse ($players as $p)
             <tr @class(['me' => $p->player->is_me])>
                 <td><a href="{{ route('players.show', $p->player) }}"><strong>{{ $p->player->username }}</strong></a>
-                    @if ($p->player->is_me)<span class="chip">me</span>@endif</td>
+                    @if ($p->player->is_me)<span class="chip">me</span>@endif
+                    @if ($p->player->isGhost())<span class="chip chip-muted">anon · {{ $p->player->location?->name }}</span>@endif</td>
                 <td class="num">{{ number_format($p->total) }}</td>
                 <td class="num">{{ $p->leads ?: '' }}</td>
                 @if ($me)<td class="num hide-sm">{{ $p->shared ?: '' }}</td>@endif

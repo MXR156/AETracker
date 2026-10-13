@@ -53,6 +53,8 @@
             <p class="muted small" style="margin-top:0">One player per line with their parcel count last, e.g.<br>
                 <code>SuperSparrow 104</code> · <code>2. LogisticHawk - 85</code> · <code>Kage_uvlf,22</code><br>
                 Pasted players are added to (or override) the table.</p>
+            <p class="muted small"><strong>Anonymous players:</strong> enter each one as <code>Anonymous</code> - every line becomes a separate player
+                for this location (Anonymous #1, #2… biggest first). Use <code>Anonymous #2</code> to update a specific one.</p>
             <textarea name="paste" rows="12" placeholder="SuperSparrow 104&#10;LogisticHawk 85">{{ old('paste') }}</textarea>
         </div>
     </div>
@@ -64,7 +66,7 @@
 </form>
 
 <datalist id="players">
-    @foreach (\App\Models\Player::orderBy('username')->pluck('username') as $name)<option value="{{ $name }}">@endforeach
+    @foreach (\App\Models\Player::real()->orderBy('username')->pluck('username') as $name)<option value="{{ $name }}">@endforeach
 </datalist>
 @endsection
 

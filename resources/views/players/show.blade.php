@@ -3,13 +3,19 @@
 @section('content')
 <div class="page-head">
     <div>
-        <h1>{{ $player->username }} @if ($player->is_me)<span class="chip">me</span>@endif</h1>
+        <h1>{{ $player->username }} @if ($player->is_me)<span class="chip">me</span>@endif
+            @if ($player->isGhost())<span class="chip chip-muted">anonymous</span>@endif</h1>
+        @if ($player->isGhost())
+            <div class="small" style="margin-bottom:.25rem">An anonymous player (deleted account or no name set) in
+                <a href="{{ route('locations.show', $player->location) }}">{{ $player->location->displayName() }}</a>.
+                Anonymous players are numbered per location, so the same number in another location is a different player.</div>
+        @endif
         <div class="muted">On {{ $rows->count() }} current {{ Str::plural('board', $rows->count()) }} ·
             {{ number_format($rows->sum(fn ($r) => $r->row->parcels)) }} parcels in tracked locations ·
             {{ $rows->where('is_leader', true)->count() }} × leader</div>
         @if ($player->notes)<div class="small" style="margin-top:.35rem">{{ $player->notes }}</div>@endif
     </div>
-    @unless ($player->is_me)
+    @unless ($player->is_me || $player->isGhost())
         <form method="post" action="{{ route('players.me', $player) }}">@csrf<button class="btn btn-ghost">This is me</button></form>
     @endunless
 </div>

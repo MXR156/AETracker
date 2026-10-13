@@ -57,6 +57,10 @@ Kage_uvlf,22
 
 Setting a player to 0 (or leaving them blank) removes them from that snapshot.
 
+### Anonymous players
+
+Atlas Earth shows deleted or unnamed accounts as "Anonymous", so several in one place can't be told apart. Each "Anonymous" you enter becomes its own *ghost* player for that location only (Anonymous #1, #2…). Un-numbered ones are given the lowest free numbers, biggest holder first. The next snapshot is pre-filled with the numbers, so their history carries on, and you can type `Anonymous #2` to update a specific one. Ghosts are hidden from the Players list unless you tick *Show anonymous*, and they're deleted along with their location.
+
 ## How earnings are estimated
 
 ```
@@ -73,7 +77,7 @@ The planner gives new parcels an expected rarity mix based on the odds in Settin
 | Table | What it holds |
 |---|---|
 | `locations` | name, type (village/town/city/county/state/country), region, notes |
-| `players` | username, `is_me` |
+| `players` | username, `is_me`; `location_id` is set only for anonymous ghost players |
 | `snapshots` | one per location per date |
 | `snapshot_entries` | player + parcel count within a snapshot |
 | `holdings` | your own parcel counts per rarity, by date |

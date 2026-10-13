@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Http\Controllers\SnapshotController;
 use App\Models\Location;
 use App\Models\Player;
 use App\Models\Snapshot;
@@ -54,14 +55,29 @@ class ImportLegacy extends Command
                 $map[$l['name']] = $location;
             }
 
+            // Group into one snapshot per location per date, so several "Anonymous" players stay separate.
+            $groups = [];
             foreach ($rows as $r) {
-                $snapshot = Snapshot::firstOrCreate(['location_id' => $map[$r['name']]->id, 'recorded_on' => $r['recorded_on']]);
+                $groups[$r['name']."\0".$r['recorded_on']][] = $r;
+            }
+
+            foreach ($groups as $group) {
+                $location = $map[$group[0]['name']];
+                $snapshot = Snapshot::firstOrCreate(['location_id' => $location->id, 'recorded_on' => $group[0]['recorded_on']]);
                 $stats['snapshots'] += $snapshot->wasRecentlyCreated ? 1 : 0;
-                $entry = $snapshot->entries()->updateOrCreate(
-                    ['player_id' => Player::findOrCreateByName($r['username'])->id],
-                    ['parcels' => (int) $r['parcel_count']],
+
+                [$named, $ghosts] = SnapshotController::splitEntries(
+                    array_map(fn ($r) => [$r['username'], (int) $r['parcel_count']], $group)
                 );
-                $stats['entries'] += $entry->wasRecentlyCreated ? 1 : 0;
+                $players = array_map(fn ($c) => [Player::findOrCreateByName($c[0]), $c[1]], array_values($named));
+                foreach ($ghosts as $number => $parcels) {
+                    $players[] = [Player::ghost($location, $number), $parcels];
+                }
+
+                foreach ($players as [$player, $parcels]) {
+                    $entry = $snapshot->entries()->updateOrCreate(['player_id' => $player->id], ['parcels' => $parcels]);
+                    $stats['entries'] += $entry->wasRecentlyCreated ? 1 : 0;
+                }
             }
         });
 
