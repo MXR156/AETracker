@@ -2,7 +2,6 @@
 
 namespace App\Services;
 
-use App\Models\Badge;
 use App\Models\Holding;
 use App\Models\Setting;
 
@@ -63,10 +62,21 @@ class EarningsCalculator
         return self::parseTiers($this->settings['badge_tiers'] ?? '');
     }
 
-    /** Badge rent boost (%) for owning $count badges plus any per-badge extra percentages. */
-    public function badgePercent(int $count, float $extra = 0): float
+    /** Badge rent boost (%) for owning $count badges. */
+    public function badgePercent(int $count): float
     {
-        return self::tierValue($this->badgeTiers(), $count) + $extra;
+        return self::tierValue($this->badgeTiers(), $count);
+    }
+
+    /** How many badges I own (entered on My Parcels). */
+    public function badgesOwned(): int
+    {
+        return max(0, (int) ($this->settings['badges_owned'] ?? 0));
+    }
+
+    public function badgeCost(): float
+    {
+        return max(0, (float) ($this->settings['cost_per_badge'] ?? 0));
     }
 
     /**
@@ -74,7 +84,7 @@ class EarningsCalculator
      *
      * @param  array<string,int|float>  $counts  parcels per rarity
      */
-    public function calculate(array $counts, int $badgeCount, float $badgeExtraPercent = 0, ?float $boostHours = null): array
+    public function calculate(array $counts, int $badgeCount, ?float $boostHours = null): array
     {
         $boostHours = max(0, min(24, $boostHours ?? (float) $this->settings['boost_hours_per_day']));
 
@@ -88,7 +98,7 @@ class EarningsCalculator
         $parcels = array_sum(array_map('floatval', $counts));
         $tierAmount = $this->tierBasis() === 'rent' ? $equivalents : $parcels;
         $boostMultiplier = self::tierValue($this->boostTiers(), $tierAmount) ?: 1;
-        $badgePercent = $this->badgePercent($badgeCount, $badgeExtraPercent);
+        $badgePercent = $this->badgePercent($badgeCount);
         $badgeMultiplier = 1 + $badgePercent / 100;
 
         $off = $base * $badgeMultiplier;
@@ -113,17 +123,17 @@ class EarningsCalculator
             'per_month' => $perDay * 365 / 12,
             'per_year' => $perDay * 365,
             'next_boost_drop' => $this->nextBoostDrop($tierAmount),
+            'next_badge_tier' => $this->nextBadgeTier($badgeCount),
         ];
     }
 
-    /** Earnings for the current holdings and owned badges. */
+    /** Earnings for the current holdings and badge count. */
     public function current(?Holding $holding = null): array
     {
         $holding ??= Holding::current();
         $counts = $holding ? $holding->counts() : array_fill_keys(self::RARITIES, 0);
-        $owned = Badge::where('owned', true)->get();
 
-        return $this->calculate($counts, $owned->count(), (float) $owned->sum('boost_percent'));
+        return $this->calculate($counts, $this->badgesOwned());
     }
 
     /** 'parcels' (tiers by parcel count) or 'rent' (tiers by common-parcel equivalents). */
@@ -174,14 +184,14 @@ class EarningsCalculator
     }
 
     /**
-     * Compare buying parcels against buying badges. Each option shows the extra per day,
-     * what it costs and how many days it takes to pay for itself.
+     * Compare buying parcels against getting enough badges for the next badge tiers. Each option
+     * shows the extra per day, what it costs and how many days it takes to pay for itself.
      *
      * @param  int[]  $parcelAmounts
      */
-    public function plan(array $counts, int $badgeCount, float $badgeExtra, iterable $buyableBadges, array $parcelAmounts = [1, 10, 25, 50, 100]): array
+    public function plan(array $counts, int $badgeCount, array $parcelAmounts = [1, 10, 25, 50, 100]): array
     {
-        $now = $this->calculate($counts, $badgeCount, $badgeExtra);
+        $now = $this->calculate($counts, $badgeCount);
         $mix = $this->expectedNewParcelMix();
         $options = [];
 
@@ -190,16 +200,18 @@ class EarningsCalculator
             foreach ($mix as $rarity => $share) {
                 $newCounts[$rarity] = ($newCounts[$rarity] ?? 0) + $n * $share;
             }
-            $after = $this->calculate($newCounts, $badgeCount, $badgeExtra);
+            $after = $this->calculate($newCounts, $badgeCount);
             $options[] = $this->option("Buy {$n} parcel".($n === 1 ? '' : 's'), 'parcels', $n * $this->parcelCost(), $now, $after);
         }
 
-        // Badges: buy them in order of cost and see what each one adds.
-        foreach ($buyableBadges as $badge) {
-            $after = $this->calculate($counts, $badgeCount + 1, $badgeExtra + (float) $badge->boost_percent);
-            $option = $this->option("Buy badge: {$badge->name}", 'badge', (float) $badge->cost, $now, $after);
-            if ($option['gain_per_day'] <= 0 && ($next = $this->nextBadgeTier($badgeCount))) {
-                $option['note'] = 'No boost until you own '.$next['from'].' badges (+'.$next['value'].'%)';
+        // The next two badge tiers: how many more badges each needs and what that's worth.
+        foreach (array_slice(array_filter($this->badgeTiers(), fn ($t) => $t['from'] > $badgeCount), 0, 2) as $tier) {
+            $more = (int) $tier['from'] - $badgeCount;
+            $after = $this->calculate($counts, (int) $tier['from']);
+            $option = $this->option("Get {$more} more ".($more === 1 ? 'badge' : 'badges')." ({$tier['from']} total)", 'badge', $more * $this->badgeCost(), $now, $after);
+            if ($this->badgeCost() <= 0) {
+                $option['payback_days'] = null;
+                $option['note'] = 'Set a cost per badge in Settings to compare';
             }
             $options[] = $option;
         }

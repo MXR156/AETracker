@@ -52,7 +52,8 @@
             <div class="field">
                 <label for="badge_tiers">Badge tiers</label>
                 <textarea id="badge_tiers" name="badge_tiers" rows="6">{{ $v('badge_tiers') }}</textarea>
-                <div class="hint">One tier per line as <code>badges:percent</code> - e.g. <code>1:5</code> means 1 or more badges gives +5% rent.</div>
+                <div class="hint">One tier per line as <code>badges:percent</code> - e.g. <code>1:5</code> means 1 or more badges gives +5% rent.
+                    Set how many badges you have on <a href="{{ route('portfolio.index') }}#badges">My Parcels</a>.</div>
             </div>
         </div>
 
@@ -75,6 +76,9 @@
                 <div class="field"><label for="cost_per_atlas_buck">Real cost of 1 Atlas Buck</label>
                     <input type="number" step="any" min="0" id="cost_per_atlas_buck" name="cost_per_atlas_buck" value="{{ $v('cost_per_atlas_buck') }}">
                     <div class="hint">e.g. a 1,000 AB pack for 9.99 → 0.00999</div></div>
+                <div class="field"><label for="cost_per_badge">Real cost of one more badge</label>
+                    <input type="number" step="any" min="0" id="cost_per_badge" name="cost_per_badge" value="{{ $v('cost_per_badge') }}">
+                    <div class="hint">Optional - lets the planner compare badges with parcels. 0 if you don't know.</div></div>
             </div>
         </div>
     </div>

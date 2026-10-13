@@ -22,7 +22,8 @@ class SettingsController extends Controller
         }
 
         $rules = ['currency_symbol' => ['required', 'string', 'max:5'], 'boost_tiers' => ['required', 'string'], 'badge_tiers' => ['nullable', 'string'], 'boost_tier_basis' => ['required', 'in:parcels,rent']];
-        foreach (array_keys(config('aetracker.defaults')) as $key) {
+        // badges_owned is set on My Parcels, not on this form.
+        foreach (array_diff(array_keys(config('aetracker.defaults')), ['badges_owned']) as $key) {
             $rules[$key] ??= ['required', 'numeric', 'min:0'];
         }
         $rules['boost_hours_per_day'][] = 'max:24';

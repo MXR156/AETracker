@@ -51,8 +51,14 @@ return [
         // Badge rent boost by number of badges owned, one line per tier: "badges:percent".
         'badge_tiers' => "1:5\n11:10\n31:15\n61:20\n101:25",
 
+        // How many badges you own (set on the My Parcels page).
+        'badges_owned' => '0',
+
         // What things cost you, in real money, for the planner.
         'atlas_bucks_per_parcel' => '100',
         'cost_per_atlas_buck' => '0.01',
+
+        // Real cost of getting one more badge, for the planner. 0 = unknown.
+        'cost_per_badge' => '0',
     ],
 ];

@@ -39,7 +39,7 @@
         @foreach ($plan['options'] as $o)
             <tr @class(['me' => $best && $o['label'] === $best['label']])>
                 <td>{{ $o['label'] }}</td>
-                <td class="num">{{ ae_money($o['cost'], 2) }}</td>
+                <td class="num">{{ $o['kind'] === 'badge' && $calc->badgeCost() <= 0 ? '–' : ae_money($o['cost'], 2) }}</td>
                 <td class="num">{!! $o['gain_per_day'] >= 0 ? '<span class="up">+'.e(ae_money($o['gain_per_day'])).'</span>' : '<span class="down">'.e(ae_money($o['gain_per_day'])).'</span>' !!}</td>
                 <td class="num hide-sm">{{ ae_money($o['gain_per_year'], 2) }}</td>
                 <td class="num">{{ ae_money($o['after']['per_day']) }}</td>
@@ -47,15 +47,14 @@
                 <td class="hide-sm small">
                     @if ($o['boost_changed'])<span class="chip chip-gold">boost {{ ae_num($now['boost_multiplier']) }}× → {{ ae_num($o['after']['boost_multiplier']) }}×</span>@endif
                     @if ($o['badge_tier_changed'])<span class="chip">badges +{{ ae_num($now['badge_percent']) }}% → +{{ ae_num($o['after']['badge_percent']) }}%</span>@endif
-                    @if ($o['kind'] === 'badge' && $o['cost'] == 0)<span class="muted">no cost set</span>@endif
                     @if ($o['note'])<span class="muted">{{ $o['note'] }}</span>@endif
                 </td>
             </tr>
         @endforeach
         </tbody>
     </table>
-    @if (collect($plan['options'])->where('kind', 'badge')->isEmpty())
-        <p class="muted small" style="margin-bottom:0">Add badges you don't own yet (with their cost) on <a href="{{ route('portfolio.index') }}#badges">My Parcels</a> to compare them here.</p>
+    @if ($calc->badgeCost() <= 0)
+        <p class="muted small" style="margin-bottom:0">To compare badges with parcels, set what one badge costs you in <a href="{{ route('settings.edit') }}">Settings</a>.</p>
     @endif
 </div>
 

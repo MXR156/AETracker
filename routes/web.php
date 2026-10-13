@@ -1,6 +1,5 @@
 <?php
 
-use App\Http\Controllers\BadgeController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\HoldingController;
 use App\Http\Controllers\ImportController;
@@ -36,10 +35,7 @@ Route::get('my-parcels/planner', [PortfolioController::class, 'planner'])->name(
 Route::post('my-parcels/holdings', [HoldingController::class, 'store'])->name('holdings.store');
 Route::post('my-parcels/holdings/add', [HoldingController::class, 'add'])->name('holdings.add');
 Route::delete('my-parcels/holdings/{holding}', [HoldingController::class, 'destroy'])->name('holdings.destroy');
-Route::post('my-parcels/badges', [BadgeController::class, 'store'])->name('badges.store');
-Route::put('my-parcels/badges/{badge}', [BadgeController::class, 'update'])->name('badges.update');
-Route::post('my-parcels/badges/{badge}/toggle', [BadgeController::class, 'toggle'])->name('badges.toggle');
-Route::delete('my-parcels/badges/{badge}', [BadgeController::class, 'destroy'])->name('badges.destroy');
+Route::put('my-parcels/badges', [PortfolioController::class, 'badges'])->name('portfolio.badges');
 
 Route::get('settings', [SettingsController::class, 'edit'])->name('settings.edit');
 Route::put('settings', [SettingsController::class, 'update'])->name('settings.update');

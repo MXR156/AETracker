@@ -2,7 +2,6 @@
 
 namespace Tests\Feature;
 
-use App\Models\Badge;
 use App\Models\Holding;
 use App\Models\Setting;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -29,19 +28,19 @@ class PortfolioTest extends TestCase
         $this->assertSame(6, $current->rare);
         $this->assertSame(119, $current->total());
 
-        $this->post('/my-parcels/badges', ['name' => 'Essex', 'owned' => 1])->assertRedirect()->assertSessionHasNoErrors();
-        $this->post('/my-parcels/badges', ['name' => 'Shop badge', 'cost' => 4.99])->assertRedirect()->assertSessionHasNoErrors();
-        $this->assertSame(1, Badge::where('owned', true)->count());
+        $this->put('/my-parcels/badges', ['badges_owned' => 21])->assertRedirect()->assertSessionHasNoErrors();
+        $this->assertSame('21', Setting::allValues()['badges_owned']);
+        $this->put('/my-parcels/badges', ['badges_owned' => -1])->assertSessionHasErrors('badges_owned');
 
-        $this->get('/my-parcels')->assertOk()->assertSee('119');
+        $this->get('/my-parcels')->assertOk()->assertSee('119')->assertSee('+10% rent')->assertSee('10 more for +15%');
         $this->get('/my-parcels/planner?amounts=1,10&boost_hours=4')
             ->assertOk()
             ->assertSee('Buy 10 parcels')
-            ->assertSee('Buy badge: Shop badge');
+            ->assertSee('Get 10 more badges (31 total)');
 
-        $badge = Badge::where('name', 'Shop badge')->first();
-        $this->post("/my-parcels/badges/{$badge->id}/toggle");
-        $this->assertTrue($badge->fresh()->owned);
+        // Saving the settings form doesn't touch the badge count.
+        $this->put('/settings', array_diff_key(config('aetracker.defaults'), ['badges_owned' => 1]))->assertSessionHasNoErrors();
+        $this->assertSame('21', Setting::allValues()['badges_owned']);
     }
 
     public function test_settings_save_and_reset(): void

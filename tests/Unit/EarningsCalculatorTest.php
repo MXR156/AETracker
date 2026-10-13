@@ -75,23 +75,38 @@ class EarningsCalculatorTest extends TestCase
         $this->assertSame(2.0, $this->calc($settings + ['boost_tier_basis' => 'rent'])->calculate($counts, 0)['boost_multiplier']);
     }
 
-    public function test_planner_sorts_by_payback_and_flags_tier_drops(): void
+    public function test_planner_compares_parcels_with_reaching_the_next_badge_tiers(): void
     {
-        $badge = (object) ['name' => 'Cheap', 'cost' => 1.0, 'boost_percent' => 0];
-        $plan = $this->calc()->plan(['common' => 30], 0, 0, [$badge], [1, 5]);
+        // 30 commons, no badges. Reaching 1 badge (+5%) for $1 beats buying parcels.
+        $plan = $this->calc(['cost_per_badge' => '1'])->plan(['common' => 30], 0, [1, 5]);
+        $this->assertSame('Get 1 more badge (1 total)', $plan['options'][0]['label']);
+        $this->assertSame(1.0, $plan['options'][0]['cost']);
 
-        // The first badge moves you from 0% to +5%, which beats buying parcels for $1.
-        $this->assertSame('Buy badge: Cheap', $plan['options'][0]['label']);
+        // Next tier after that is 11 badges -> 11 more.
+        $this->assertNotNull(collect($plan['options'])->firstWhere('label', 'Get 11 more badges (11 total)'));
 
         $five = collect($plan['options'])->firstWhere('label', 'Buy 5 parcels');
         $this->assertTrue($five['boost_changed']);
         $this->assertSame(40.0, $five['after']['boost_multiplier']);
 
-        // Already on the first badge tier: one more badge adds nothing until the next tier.
-        $plan = $this->calc()->plan(['common' => 30], 2, 0, [$badge], [1]);
+        // With no badge cost set, badge options show the gain but no payback.
+        $plan = $this->calc()->plan(['common' => 30], 2, [1]);
         $badgeOption = collect($plan['options'])->firstWhere('kind', 'badge');
+        $this->assertSame('Get 9 more badges (11 total)', $badgeOption['label']);
         $this->assertNull($badgeOption['payback_days']);
-        $this->assertSame('No boost until you own 11 badges (+10%)', $badgeOption['note']);
+        $this->assertGreaterThan(0, $badgeOption['gain_per_day']);
+    }
+
+    public function test_badge_count_picks_the_tier(): void
+    {
+        $calc = $this->calc(['badge_tiers' => "1:5\n11:10\n31:15\n61:20\n101:25", 'badges_owned' => '21']);
+
+        $this->assertSame(21, $calc->badgesOwned());
+        $r = $calc->calculate(['common' => 10], $calc->badgesOwned());
+        $this->assertSame(10.0, $r['badge_percent']);
+        $this->assertSame(['from' => 31, 'value' => 15.0], $r['next_badge_tier']);
+        $this->assertSame(0.0, $calc->badgePercent(0));
+        $this->assertSame(25.0, $calc->badgePercent(500));
     }
 
     public function test_paste_parser_handles_common_formats(): void

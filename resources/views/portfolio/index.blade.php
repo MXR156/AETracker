@@ -2,7 +2,6 @@
 @section('title', 'My Parcels')
 @section('content')
 @php($e = $earnings)
-@php($owned = $badges->where('owned', true))
 <div class="page-head">
     <div><h1>My Parcels &amp; Earnings</h1>
         <div class="muted">Estimated from your parcel counts, badges and the rates on the <a href="{{ route('settings.edit') }}">Settings</a> page.</div></div>
@@ -16,7 +15,7 @@
 <div class="stats">
     <div class="stat"><div class="label">Parcels</div><div class="value">{{ number_format($e['parcels']) }}</div>
         <div class="sub">@foreach ($calc::RARITIES as $r){{ $e['counts'][$r] ?? 0 }} {{ substr($r, 0, 1) === 'l' ? 'leg' : substr($r, 0, 3) }}@if (! $loop->last) · @endif @endforeach</div></div>
-    <div class="stat"><div class="label">Badges</div><div class="value">{{ $owned->count() }}</div><div class="sub">+{{ ae_num($e['badge_percent'], 2) }}% rent</div></div>
+    <div class="stat"><div class="label">Badges</div><div class="value">{{ number_format($badges) }}</div><div class="sub">+{{ ae_num($e['badge_percent'], 2) }}% rent</div></div>
     <div class="stat"><div class="label">Ad boost</div><div class="value">{{ ae_num($e['boost_multiplier'], 2) }}×</div><div class="sub">{{ ae_num($e['boost_hours'], 1) }} h/day boosted · tier from {{ number_format($e['tier_amount']) }} {{ $calc->tierBasis() === 'rent' ? 'equiv.' : 'parcels' }}</div></div>
     <div class="stat"><div class="label">Est. per day</div><div class="value">{{ ae_money($e['per_day']) }}</div><div class="sub">{{ ae_money($e['per_year'], 2) }} / year</div></div>
 </div>
@@ -126,51 +125,50 @@
     </table>
 </div>
 
-<div class="card table-wrap" id="badges">
+<div class="card" id="badges">
     <h2>Badges</h2>
-    <p class="muted small" style="margin-top:0">Your badge rent boost comes from how many badges you own (badge tiers on the Settings page), plus any extra % you give a badge here.
-        Add badges you don't own yet with a cost, and the planner will compare buying them with buying parcels.</p>
-    <table>
-        <thead><tr><th>Owned</th><th>Badge</th><th class="hide-sm">Category</th><th class="num">Extra %</th><th class="num">Cost</th><th></th></tr></thead>
-        <tbody>
-        @forelse ($badges as $badge)
-            <tr>
-                <td>
-                    <form method="post" action="{{ route('badges.toggle', $badge) }}">@csrf
-                        <button class="link-btn" title="Toggle owned" style="font-size:1.1rem">{{ $badge->owned ? '✅' : '⬜' }}</button>
-                    </form>
-                </td>
-                <td>{{ $badge->name }} @if ($badge->owned && $badge->acquired_on)<span class="muted small">since {{ $badge->acquired_on->format('j M Y') }}</span>@endif</td>
-                <td class="hide-sm">{{ $badge->category }}</td>
-                <td class="num">{{ $badge->boost_percent ? '+'.ae_num($badge->boost_percent, 3).'%' : '' }}</td>
-                <td class="num">{{ $badge->cost !== null ? ae_money($badge->cost, 2) : '' }}</td>
-                <td class="right">
-                    <form class="inline" method="post" action="{{ route('badges.destroy', $badge) }}" onsubmit="return confirm('Delete this badge?')">
-                        @csrf @method('DELETE')<button class="link-btn" style="color:var(--down)">Delete</button>
-                    </form>
-                </td>
-            </tr>
-        @empty
-            <tr><td colspan="6" class="empty">No badges yet.</td></tr>
-        @endforelse
-        </tbody>
-    </table>
-
-    <details style="margin-top:1rem" @if ($badges->isEmpty() || $errors->has('name')) open @endif>
-        <summary>+ Add a badge</summary>
-        <form method="post" action="{{ route('badges.store') }}" style="margin-top:.75rem">
-            @csrf
-            <div class="form-row">
-                <div class="field"><label for="b_name">Name</label><input id="b_name" name="name" required></div>
-                <div class="field"><label for="b_cat">Category</label><input id="b_cat" name="category" placeholder="e.g. City, Country, Event"></div>
-                <div class="field"><label for="b_pct">Extra boost %</label><input type="number" step="any" min="0" id="b_pct" name="boost_percent" value="0">
-                    <div class="hint">Leave 0 if it only counts towards the badge tiers.</div></div>
-                <div class="field"><label for="b_cost">Cost</label><input type="number" step="any" min="0" id="b_cost" name="cost" placeholder="if buyable"></div>
+    <div class="grid grid-2" style="align-items:start">
+        <form method="post" action="{{ route('portfolio.badges') }}">
+            @csrf @method('PUT')
+            <div class="field">
+                <label for="badges_owned">How many badges do you have?</label>
+                <div class="actions" style="flex-wrap:nowrap">
+                    <input type="number" min="0" id="badges_owned" name="badges_owned" value="{{ old('badges_owned', $badges) }}" style="max-width:140px" required>
+                    <button class="btn">Save</button>
+                </div>
             </div>
-            <label style="font-weight:400"><input type="checkbox" name="owned" value="1" checked> I own this badge</label>
-            <div style="margin-top:.75rem"><button class="btn btn-sm">Add badge</button></div>
+            <p style="margin:0">
+                @if ($e['badge_percent'] > 0)
+                    {{ number_format($badges) }} badges gives you <strong>+{{ ae_num($e['badge_percent'], 2) }}% rent</strong>.
+                @else
+                    No badge boost yet.
+                @endif
+                @if ($e['next_badge_tier'])
+                    <span class="muted">{{ number_format($e['next_badge_tier']['from'] - $badges) }} more for +{{ ae_num($e['next_badge_tier']['value'], 2) }}%.</span>
+                @else
+                    <span class="muted">That's the top tier.</span>
+                @endif
+            </p>
         </form>
-    </details>
+
+        <div class="table-wrap">
+            <table>
+                <thead><tr><th>Badges</th><th class="num">Rent boost</th></tr></thead>
+                <tbody>
+                @forelse ($badgeTiers as $i => $tier)
+                    @php($upTo = isset($badgeTiers[$i + 1]) ? $badgeTiers[$i + 1]['from'] - 1 : null)
+                    <tr @class(['me' => $badges >= $tier['from'] && ($upTo === null || $badges <= $upTo)])>
+                        <td>{{ number_format($tier['from']) }}{{ $upTo === null ? '+' : '–'.number_format($upTo) }}</td>
+                        <td class="num">+{{ ae_num($tier['value'], 2) }}%</td>
+                    </tr>
+                @empty
+                    <tr><td colspan="2" class="empty">No badge tiers set - add them in <a href="{{ route('settings.edit') }}">Settings</a>.</td></tr>
+                @endforelse
+                </tbody>
+            </table>
+            <p class="muted small" style="margin-bottom:0">Change the tiers in <a href="{{ route('settings.edit') }}">Settings</a>.</p>
+        </div>
+    </div>
 </div>
 @endsection
 

@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Badge;
 use App\Models\Holding;
+use App\Models\Setting;
 use App\Services\EarningsCalculator;
 use Illuminate\Http\Request;
 
@@ -14,14 +14,13 @@ class PortfolioController extends Controller
         $calc = new EarningsCalculator;
         $holdings = Holding::orderByDesc('recorded_on')->orderByDesc('id')->get();
         $current = $holdings->first();
-        $badges = Badge::orderByDesc('owned')->orderBy('category')->orderBy('name')->get();
-        $owned = $badges->where('owned', true);
+        $badges = $calc->badgesOwned();
 
         // Estimated daily earnings at each point in history (using today's badges and settings).
         $history = $holdings->reverse()->values()->map(fn ($h) => [
             'date' => $h->recorded_on->format('Y-m-d'),
             'parcels' => $h->total(),
-            'per_day' => round($calc->calculate($h->counts(), $owned->count(), (float) $owned->sum('boost_percent'))['per_day'], 6),
+            'per_day' => round($calc->calculate($h->counts(), $badges)['per_day'], 6),
         ]);
 
         return view('portfolio.index', [
@@ -29,10 +28,20 @@ class PortfolioController extends Controller
             'current' => $current,
             'holdings' => $holdings,
             'badges' => $badges,
+            'badgeTiers' => $calc->badgeTiers(),
             'earnings' => $calc->current($current),
             'history' => $history,
             'settings' => $calc->settings,
         ]);
+    }
+
+    /** Save how many badges I own. */
+    public function badges(Request $request)
+    {
+        $data = $request->validate(['badges_owned' => ['required', 'integer', 'min:0', 'max:100000']]);
+        Setting::put('badges_owned', (string) $data['badges_owned']);
+
+        return redirect()->to(route('portfolio.index').'#badges')->with('status', "Badges set to {$data['badges_owned']}.");
     }
 
     public function planner(Request $request)
@@ -40,7 +49,7 @@ class PortfolioController extends Controller
         $calc = new EarningsCalculator;
         $current = Holding::current();
         $counts = $current ? $current->counts() : array_fill_keys(EarningsCalculator::RARITIES, 0);
-        $owned = Badge::where('owned', true)->get();
+        $badges = $calc->badgesOwned();
 
         $amounts = collect(explode(',', (string) $request->query('amounts', '1,10,25,50,100')))
             ->map(fn ($n) => (int) trim($n))->filter(fn ($n) => $n > 0 && $n <= 100000)->unique()->sort()->values()->all() ?: [1, 10, 50];
@@ -49,13 +58,7 @@ class PortfolioController extends Controller
             $calc->settings['boost_hours_per_day'] = (string) max(0, min(24, (float) $request->query('boost_hours')));
         }
 
-        $plan = $calc->plan(
-            $counts,
-            $owned->count(),
-            (float) $owned->sum('boost_percent'),
-            Badge::where('owned', false)->orderBy('cost')->get(),
-            $amounts,
-        );
+        $plan = $calc->plan($counts, $badges, $amounts);
 
         // How earnings change as you add parcels - shows where boost tiers kick in.
         $mix = $calc->expectedNewParcelMix();
@@ -67,7 +70,7 @@ class PortfolioController extends Controller
             foreach ($mix as $rarity => $share) {
                 $c[$rarity] = ($c[$rarity] ?? 0) + $extra * $share;
             }
-            $r = $calc->calculate($c, $owned->count(), (float) $owned->sum('boost_percent'));
+            $r = $calc->calculate($c, $badges);
             $curve[] = ['parcels' => array_sum($counts) + $extra, 'per_day' => round($r['per_day'], 6), 'boost' => $r['boost_multiplier']];
         }
 
