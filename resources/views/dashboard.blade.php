@@ -43,7 +43,7 @@
 <div class="grid grid-2" style="margin-bottom:1.25rem">
     <div class="card">
         <h2>My parcels</h2>
-        <p class="muted small" style="margin-top:0">Enter how many you own of each rarity. Saving on the same date again just corrects that day's entry.</p>
+        <p class="muted small" style="margin-top:0">How many you own of each rarity - used for all the earnings figures. Update it whenever your count changes.</p>
         <form method="post" action="{{ route('holdings.store') }}">
             @csrf
             <div class="form-row form-row-4">
@@ -52,11 +52,7 @@
                         <input type="number" min="0" id="h_{{ $r }}" name="{{ $r }}" value="{{ old($r, $current?->$r ?? 0) }}" required></div>
                 @endforeach
             </div>
-            <div class="form-row">
-                <div class="field"><label for="h_date">Date</label><input type="date" id="h_date" name="recorded_on" value="{{ now()->toDateString() }}" required></div>
-                <div class="field"><label for="h_notes">Notes</label><input id="h_notes" name="notes"></div>
-            </div>
-            <button class="btn btn-ghost">Save counts</button>
+            <button class="btn">Save</button>
         </form>
     </div>
     <div class="card" id="badges">
@@ -213,14 +209,13 @@
 <div class="card table-wrap" style="margin-top:1.25rem">
     <h2>Parcel history</h2>
     <table>
-        <thead><tr><th>Date</th>@foreach ($calc::RARITIES as $r)<th class="num">{{ ucfirst($r) }}</th>@endforeach<th class="num">Total</th><th class="hide-sm">Notes</th><th></th></tr></thead>
+        <thead><tr><th>Date</th>@foreach ($calc::RARITIES as $r)<th class="num">{{ ucfirst($r) }}</th>@endforeach<th class="num">Total</th><th></th></tr></thead>
         <tbody>
         @forelse ($holdings as $h)
             <tr>
                 <td class="nowrap">{{ $h->recorded_on->format('j M Y') }}</td>
                 @foreach ($calc::RARITIES as $r)<td class="num">{{ number_format($h->$r) }}</td>@endforeach
                 <td class="num"><strong>{{ number_format($h->total()) }}</strong></td>
-                <td class="hide-sm small muted">{{ $h->notes }}</td>
                 <td class="right">
                     <form class="inline" method="post" action="{{ route('holdings.destroy', $h) }}" onsubmit="return confirm('Delete this entry?')">
                         @csrf @method('DELETE')<button class="link-btn" style="color:var(--down)">Delete</button>
