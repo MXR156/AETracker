@@ -13,7 +13,7 @@ class PortfolioTest extends TestCase
 
     public function test_holdings_badges_and_planner(): void
     {
-        $this->get('/my-parcels')->assertOk()->assertSee('Start by entering');
+        $this->get('/')->assertOk()->assertSee('Start by entering');
 
         $this->post('/my-parcels/holdings', ['recorded_on' => '2026-10-01', 'common' => 100, 'rare' => 5, 'epic' => 2, 'legendary' => 1])
             ->assertRedirect()->assertSessionHasNoErrors();
@@ -32,7 +32,7 @@ class PortfolioTest extends TestCase
         $this->assertSame('21', Setting::allValues()['badges_owned']);
         $this->put('/my-parcels/badges', ['badges_owned' => -1])->assertSessionHasErrors('badges_owned');
 
-        $this->get('/my-parcels')->assertOk()->assertSee('119')->assertSee('+10% rent')->assertSee('10 more for +15%');
+        $this->get('/')->assertOk()->assertSee('119')->assertSee('+10% rent')->assertSee('10 more for +15%');
         $this->get('/my-parcels/planner?amounts=1,10&boost_hours=4')
             ->assertOk()
             ->assertSee('Buy 10 parcels')
@@ -48,7 +48,7 @@ class PortfolioTest extends TestCase
         Setting::put('badges_owned', '5');
         $this->post('/my-parcels/holdings', ['recorded_on' => '2026-10-01', 'common' => 1, 'rare' => 0, 'epic' => 0, 'legendary' => 0]);
 
-        $this->get('/my-parcels')->assertOk()
+        $this->get('/')->assertOk()
             ->assertSee('includes your +5% badge boost')
             ->assertSee('With ad boost (20×)')
             ->assertSee('$0.00000419580')
@@ -66,7 +66,7 @@ class PortfolioTest extends TestCase
         Setting::put('badges_owned', '21');
         $this->post('/my-parcels/holdings', ['recorded_on' => '2026-10-01', 'common' => 5000, 'rare' => 0, 'epic' => 0, 'legendary' => 0]);
 
-        foreach (['/my-parcels', '/my-parcels/planner', '/'] as $url) {
+        foreach (['/', '/my-parcels/planner'] as $url) {
             $html = $this->get($url)->assertOk()->getContent();
             preg_match_all('/\$(\d[\d,]*)\.(\d+)/', strip_tags($html), $m);
             $this->assertNotEmpty($m[0], $url);
@@ -78,8 +78,8 @@ class PortfolioTest extends TestCase
         }
 
         // Yearly earnings over $1 still get 11 places.
-        $this->get('/my-parcels')->assertSee('/ year')->assertDontSeeText('$97.8330');
-        $this->assertMatchesRegularExpression('/\$[1-9][\d,]*\.\d{11}/', strip_tags($this->get('/my-parcels')->getContent()));
+        $this->get('/')->assertSee('/ year')->assertDontSeeText('$97.8330');
+        $this->assertMatchesRegularExpression('/\$[1-9][\d,]*\.\d{11}/', strip_tags($this->get('/')->getContent()));
     }
 
     public function test_planner_has_boosted_and_base_charts(): void
@@ -104,6 +104,17 @@ class PortfolioTest extends TestCase
         $this->assertEqualsWithDelta($first['base'] * 365 / 12, $first['base_month'], 1e-9);
 
         $this->get('/my-parcels/planner?boost_hours=6')->assertOk()->assertSee('Your typical day (6h boosted)');
+    }
+
+    public function test_my_parcels_redirects_to_the_dashboard(): void
+    {
+        $this->get('/my-parcels')->assertRedirect('/');
+
+        // Updating parcels and badges returns to the dashboard's update section.
+        $this->post('/my-parcels/holdings/add', ['rarity' => 'common', 'quantity' => 3])->assertRedirect(route('dashboard').'#update');
+        $this->put('/my-parcels/badges', ['badges_owned' => 4])->assertRedirect(route('dashboard').'#update');
+        $this->get('/')->assertOk()->assertSee('Update my parcels')->assertSee('How many badges do you have?')
+            ->assertSee('in charge')->assertSee('Parcel history');
     }
 
     public function test_settings_save_and_reset(): void

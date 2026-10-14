@@ -68,7 +68,7 @@ class EarningsCalculator
         return self::tierValue($this->badgeTiers(), $count);
     }
 
-    /** How many badges I own (entered on My Parcels). */
+    /** How many badges I own (entered on the dashboard). */
     public function badgesOwned(): int
     {
         return max(0, (int) ($this->settings['badges_owned'] ?? 0));

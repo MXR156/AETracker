@@ -29,8 +29,8 @@ Route::put('players/{player}', [PlayerController::class, 'update'])->name('playe
 Route::post('players/{player}/me', [PlayerController::class, 'markMe'])->name('players.me');
 Route::delete('players/{player}', [PlayerController::class, 'destroy'])->name('players.destroy');
 
-// My parcels, earnings and planner
-Route::get('my-parcels', [PortfolioController::class, 'index'])->name('portfolio.index');
+// My parcels, badges and planner (my parcels and earnings are shown on the dashboard)
+Route::redirect('my-parcels', '/'); // My Parcels is now part of the dashboard
 Route::get('my-parcels/planner', [PortfolioController::class, 'planner'])->name('portfolio.planner');
 Route::post('my-parcels/holdings', [HoldingController::class, 'store'])->name('holdings.store');
 Route::post('my-parcels/holdings/add', [HoldingController::class, 'add'])->name('holdings.add');

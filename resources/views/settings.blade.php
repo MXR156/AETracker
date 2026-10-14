@@ -61,7 +61,7 @@
                 <label for="badge_tiers">Badge tiers</label>
                 <textarea id="badge_tiers" name="badge_tiers" rows="6">{{ $v('badge_tiers') }}</textarea>
                 <div class="hint">One tier per line as <code>badges:percent</code> - e.g. <code>1:5</code> means 1 or more badges gives +5% rent.
-                    Set how many badges you have on <a href="{{ route('portfolio.index') }}#badges">My Parcels</a>.</div>
+                    Set how many badges you have on the <a href="{{ route('dashboard') }}#update">Dashboard</a>.</div>
             </div>
         </div>
 

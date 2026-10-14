@@ -4,8 +4,7 @@ A Laravel 13 app for tracking Atlas Earth parcels:
 
 - **Locations & leaderboards**: add villages, towns and cities and record dated *snapshots* of who owns how many parcels. Each location shows its **Mayor** (most parcels, ties included), everyone's rank, the change since the last snapshot, the gain since each player was first seen, their share, the gap to #1, and a growth chart.
 - **Players**: every player seen on a board and all the locations they currently hold parcels in. You can filter to players in 2+ or 3+ locations. Mark your own username as *me* (the "This is me" button on a player page) to get "parcels needed to become Mayor" everywhere.
-- **Dashboard**: where you're Mayor, where you're closest to taking over, and which locations are due an update.
-- **My Parcels**: your parcel counts by rarity over time, how many badges you have (just a number; it shows your badge tier and how many more you need for the next), and estimated earnings (per second/hour/day/month/year) on and off ad boost.
+- **Dashboard**: the one place to update your parcels (add/remove some, or set exact counts by rarity) and your badge count (just a number; it shows your badge tier and how many more you need for the next). It also shows your stats, estimated earnings (per second/hour/day/week/month/year, base and with ad boost), where you're Mayor, where you're closest to taking over, which locations are due an update, and your parcel history.
 - **Planner**: compares buying 1/10/25/50/100 parcels against reaching the next badge tiers, ranked by how fast each one pays for itself (set a cost per badge in Settings for the badge payback). It flags when a purchase drops you into a lower ad-boost tier and charts earnings as you add parcels.
 - **Settings**: rent per rarity, boost tiers (by parcel count or by rent), badge tiers, rarity odds and costs. The boost and UK badge tier defaults come from the game; the rent rates and odds are estimates, so check them against the game.
 
@@ -86,7 +85,7 @@ per year   = (365 − SB days) × per day + SB days × SB day      e.g. 333d + 3
 per month  = per year ÷ 12                                    e.g. 27.75d + 2.67SBd
 ```
 
-My Parcels shows a Base column (no ad boost) and a With ad boost column (boosted all day). If you set fewer than 24 boosted hours a day, it adds a "Your typical" column too.
+The dashboard shows a Base column (no ad boost) and a With ad boost column (boosted all day). If you set fewer than 24 boosted hours a day, it adds a "Your typical" column too.
 
 The planner gives new parcels an expected rarity mix based on the odds in Settings.
 

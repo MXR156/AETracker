@@ -18,7 +18,6 @@
             <a href="{{ route('locations.index') }}" @class(['active' => request()->routeIs('locations.*', 'snapshots.*')])>Locations</a>
             <a href="{{ route('import.index') }}" @class(['active' => request()->routeIs('import.*')])>Import</a>
             <a href="{{ route('players.index') }}" @class(['active' => request()->routeIs('players.*')])>Players</a>
-            <a href="{{ route('portfolio.index') }}" @class(['active' => request()->routeIs('portfolio.index')])>My Parcels</a>
             <a href="{{ route('portfolio.planner') }}" @class(['active' => request()->routeIs('portfolio.planner')])>Planner</a>
             <a href="{{ route('settings.edit') }}" @class(['active' => request()->routeIs('settings.*')])>Settings</a>
         </nav>

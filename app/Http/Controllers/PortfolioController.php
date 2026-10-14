@@ -9,39 +9,13 @@ use Illuminate\Http\Request;
 
 class PortfolioController extends Controller
 {
-    public function index()
-    {
-        $calc = new EarningsCalculator;
-        $holdings = Holding::orderByDesc('recorded_on')->orderByDesc('id')->get();
-        $current = $holdings->first();
-        $badges = $calc->badgesOwned();
-
-        // Estimated daily earnings at each point in history (using today's badges and settings).
-        $history = $holdings->reverse()->values()->map(fn ($h) => [
-            'date' => $h->recorded_on->format('Y-m-d'),
-            'parcels' => $h->total(),
-            'per_day' => round($calc->calculate($h->counts(), $badges)['per_day'], 11),
-        ]);
-
-        return view('portfolio.index', [
-            'calc' => $calc,
-            'current' => $current,
-            'holdings' => $holdings,
-            'badges' => $badges,
-            'badgeTiers' => $calc->badgeTiers(),
-            'earnings' => $calc->current($current),
-            'history' => $history,
-            'settings' => $calc->settings,
-        ]);
-    }
-
     /** Save how many badges I own. */
     public function badges(Request $request)
     {
         $data = $request->validate(['badges_owned' => ['required', 'integer', 'min:0', 'max:100000']]);
         Setting::put('badges_owned', (string) $data['badges_owned']);
 
-        return redirect()->to(route('portfolio.index').'#badges')->with('status', "Badges set to {$data['badges_owned']}.");
+        return redirect()->to(route('dashboard').'#update')->with('status', "Badges set to {$data['badges_owned']}.");
     }
 
     public function planner(Request $request)

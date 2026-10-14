@@ -5,11 +5,11 @@
 @php($best = collect($plan['options'])->first(fn ($o) => $o['payback_days'] !== null))
 <div class="page-head">
     <div><h1>Planner</h1><div class="muted">Parcels or badges: what pays for itself fastest?</div></div>
-    <a href="{{ route('portfolio.index') }}" class="btn btn-ghost">← My parcels</a>
+    <a href="{{ route('dashboard') }}" class="btn btn-ghost">← Dashboard</a>
 </div>
 
 @unless ($hasHoldings)
-    <div class="notice">You haven't entered your parcels yet - <a href="{{ route('portfolio.index') }}">add them</a> for a meaningful plan.</div>
+    <div class="notice">You haven't entered your parcels yet - <a href="{{ route('dashboard') }}">add them</a> for a meaningful plan.</div>
 @endunless
 
 <form class="card filters" method="get" style="align-items:flex-end">

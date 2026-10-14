@@ -39,6 +39,8 @@ main { max-width: 1200px; margin: 0 auto; padding: 1.25rem 16px 3rem; }
 .grid { display: grid; gap: 1.25rem; }
 .grid-2 { grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); }
 .grid-3 { grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+.grid-2x2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+@media (max-width: 760px) { .grid-2x2 { grid-template-columns: 1fr; } }
 .grid > .card { margin-bottom: 0; }
 .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: .75rem; margin-bottom: 1.25rem; }
 .stat { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: .75rem 1rem; }

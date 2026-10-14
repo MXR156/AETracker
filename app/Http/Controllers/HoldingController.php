@@ -23,7 +23,7 @@ class HoldingController extends Controller
 
         Holding::updateOrCreate(['recorded_on' => $data['recorded_on']], $data);
 
-        return redirect()->route('portfolio.index')->with('status', 'Parcel counts saved.');
+        return redirect()->to(route('dashboard').'#update')->with('status', 'Parcel counts saved.');
     }
 
     /** Add (or remove) a number of parcels of one rarity to my current counts. */
@@ -46,13 +46,13 @@ class HoldingController extends Controller
         $holding->notes = trim(($holding->exists ? $holding->notes.'; ' : '').$note, '; ');
         $holding->save();
 
-        return redirect()->route('portfolio.index')->with('status', "Recorded {$note}.");
+        return redirect()->to(route('dashboard').'#update')->with('status', "Recorded {$note}.");
     }
 
     public function destroy(Holding $holding)
     {
         $holding->delete();
 
-        return redirect()->route('portfolio.index')->with('status', 'Entry deleted.');
+        return redirect()->to(route('dashboard').'#update')->with('status', 'Entry deleted.');
     }
 }
