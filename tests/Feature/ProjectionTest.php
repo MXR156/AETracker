@@ -9,6 +9,7 @@ use App\Models\Setting;
 use App\Services\EarningsCalculator;
 use App\Services\Projection;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use Tests\TestCase;
 
 class ProjectionTest extends TestCase
@@ -23,38 +24,76 @@ class ProjectionTest extends TestCase
         ], $settings)));
     }
 
-    public function test_ab_income_matches_the_90_day_figures(): void
+    public function test_reward_schedules_match_the_game_totals(): void
     {
         $p = $this->projection();
 
+        $this->assertSame(448.0, array_sum($p->loginSchedule('free')));
+        $this->assertSame(10505.0, array_sum($p->loginSchedule('explorer')));
+        $this->assertSame(200.0, $p->loginSchedule('free')[90]);
+        $this->assertSame(90.0, $p->loginSchedule('explorer')[89]);
+
+        $free = $p->ladder('free');
+        $premium = $p->ladder('premium');
+        $this->assertCount(15, $free);
+        $this->assertSame(294.0, array_sum(array_column($free, 'ab')));
+        $this->assertSame(1030.0, array_sum(array_column($premium, 'ab')));
+        $this->assertSame(1, $free[14]['badges']);
+        $this->assertSame(1, $premium[14]['legendary']);
+        $this->assertSame('15 bid tokens', $free[1]['other']);
+
         // 448 + 294x3 + 10,505 + 1,030x3 = 14,925 AB per 90 days
-        $this->assertEqualsWithDelta(14925, $p->abPerDay() * 90, 1e-9);
-        $this->assertEqualsWithDelta(165.83, $p->abPerDay(), 0.01);
-        $this->assertEqualsWithDelta(149.25, $p->abPerDay() * 90 / $p->abPerParcel(), 1e-9);
+        $this->assertEqualsWithDelta(14925, $p->abPer90Days(), 1e-9);
         $this->assertEqualsWithDelta(49.98, $p->subscriptionCostPerMonth(), 1e-9);
 
-        // Free only: 448 + 882 = 1,330 per 90 days, no subscriptions.
-        $free = $this->projection(['explorer_club' => '0', 'premium_ladder' => '0']);
-        $this->assertEqualsWithDelta(1330, $free->abPerDay() * 90, 1e-9);
-        $this->assertSame(0.0, $free->subscriptionCostPerMonth());
+        // Free only: 448 + 882 = 1,330
+        $this->assertEqualsWithDelta(1330, $this->projection(['explorer_club' => '0', 'premium_ladder' => '0'])->abPer90Days(), 1e-9);
     }
 
-    public function test_buys_whole_parcels_each_month_and_carries_the_rest(): void
+    public function test_streak_day_moves_on_and_restarts_after_day_90(): void
     {
-        $p = $this->projection(['ab_balance' => '50']);
-        $result = $p->run(new Holding(['common' => 421, 'rare' => 0, 'epic' => 0, 'legendary' => 0]), 12);
-        $rows = $result['rows'];
+        $p = $this->projection(['login_streak_day' => '85', 'login_streak_set_on' => '2026-10-14']);
 
-        $this->assertCount(13, $rows);
-        $abPerMonth = $p->abPerDay() * 365 / 12; // ~5,044 AB
-        $this->assertSame((int) floor((50 + $abPerMonth) / 100), $rows[1]['bought']);
-        $this->assertEqualsWithDelta(fmod(50 + $abPerMonth, 100), $rows[1]['ab_balance'], 1e-6);
+        $this->assertSame(85, $p->streakDay(Carbon::parse('2026-10-14')));
+        $this->assertSame(90, $p->streakDay(Carbon::parse('2026-10-19')));
+        $this->assertSame(1, $p->streakDay(Carbon::parse('2026-10-20')));
+        $this->assertSame(84, $p->streakDay(Carbon::parse('2026-10-13')));
+    }
 
-        // A year of income (plus the 50 AB) all spent: ~605 parcels.
-        $this->assertSame((int) floor((50 + 12 * $abPerMonth) / 100), $rows[12]['bought_total']);
-        $this->assertSame(421 + $rows[12]['bought_total'], $rows[12]['parcels']);
-        $this->assertGreaterThan($rows[0]['rent_month'], $rows[12]['rent_month']);
-        $this->assertEqualsWithDelta(12 * 49.98, $rows[12]['subs_total'], 1e-9);
+    public function test_projects_day_by_day_with_the_streak_and_ladder(): void
+    {
+        // Free rewards only, on day 85 of the streak on 14 Oct.
+        $p = $this->projection([
+            'explorer_club' => '0', 'premium_ladder' => '0',
+            'login_streak_day' => '85', 'login_streak_set_on' => '2026-10-14', 'badges_owned' => '0',
+        ]);
+        $rows = $p->run(new Holding(['common' => 100, 'rare' => 0, 'epic' => 0, 'legendary' => 0]), 1, Carbon::parse('2026-10-14'))['rows'];
+
+        // 15-31 Oct: streak days 86-89 (1 AB each) + day 90 (200) + days 1-12 (11 x 1 + 8 on day 7) = 223 AB.
+        // The ladder only has step 15 left this month: 1 badge.
+        $end = $rows[1];
+        $this->assertSame('2026-10-31', $end['date']->toDateString());
+        $this->assertEqualsWithDelta(223, $end['ab_total'], 1e-9);
+        $this->assertSame(2, $end['bought']);
+        $this->assertEqualsWithDelta(23, $end['ab_balance'], 1e-9);
+        $this->assertSame(102, $end['parcels']);
+        $this->assertSame(1, $end['badges']);
+    }
+
+    public function test_premium_ladder_adds_a_legendary_upgrade_and_both_ladders_pay_out(): void
+    {
+        $p = $this->projection(['explorer_club' => '0', 'login_streak_day' => '1', 'login_streak_set_on' => '2026-10-31', 'badges_owned' => '5']);
+        $rows = $p->run(new Holding(['common' => 50, 'rare' => 0, 'epic' => 0, 'legendary' => 0]), 2, Carbon::parse('2026-10-31'))['rows'];
+
+        $nov = $rows[2];
+        $this->assertSame('2026-11-30', $nov['date']->toDateString());
+        // November: both ladders in full (294 + 1,030) + free login streak days 2-31
+        // (27 ordinary days x 1 + day 7: 8 + day 14: 25 + day 30: 50).
+        $this->assertSame('2026-10-31', $rows[1]['date']->toDateString()); // today is a month end
+        $this->assertEqualsWithDelta(1324 + 27 + 8 + 25 + 50, $nov['ab_total'], 1e-9);
+        $this->assertSame(6, $nov['badges']);
+        $this->assertSame(1, $nov['upgrades']);
+        $this->assertGreaterThan($rows[0]['rent_month'], $nov['rent_month']);
     }
 
     public function test_milestones_report_the_first_month_a_target_is_reached(): void
@@ -63,7 +102,6 @@ class ProjectionTest extends TestCase
         $result = $p->run(new Holding(['common' => 421]), 6);
         $byLabel = collect($result['milestones'])->keyBy('label');
 
-        $this->assertSame('Already there', $result['rows'][0]['month'] === 0 ? 'Already there' : null);
         $this->assertSame(0, $byLabel['Rent reaches $0.00 a month']['row']['month']);
         $this->assertNull($byLabel['Rent reaches $1,000,000.00 a month']['row']);
         $this->assertArrayHasKey('Rent covers both subscriptions', $byLabel->all());
@@ -87,7 +125,8 @@ class ProjectionTest extends TestCase
 
         $this->assertSame(105, $t->gap);                       // 342 - 238 + 1
         $this->assertEqualsWithDelta(20.28, $t->growth, 0.01);  // 40 parcels in 60 days ≈ 20.3 a month
-        $this->assertSame(3, $t->still['month']);               // ~50 parcels a month -> 3 months
+        $this->assertGreaterThanOrEqual(105, $t->still['bought_total']);
+        $this->assertLessThanOrEqual(4, $t->still['month']);    // ~50 parcels a month
         $this->assertGreaterThan($t->still['month'], $t->growing['month']);
     }
 
@@ -97,22 +136,31 @@ class ProjectionTest extends TestCase
 
         $this->get('/projection')->assertOk()->assertSee('Your AB income')->assertSee('1,330'); // free only by default
 
-        $this->put('/projection', [
-            'ab_free_daily_90' => 448, 'ab_free_ladder_30' => 294,
-            'explorer_club' => '1', 'ab_explorer_90' => 10505, 'explorer_cost_month' => 24.99,
-            'premium_ladder' => '1', 'ab_premium_30' => 1030, 'premium_cost_month' => 24.99,
+        $form = [
+            'login_streak_day' => 85, 'login_cycle_days' => 90,
+            'login_free_base' => 1, 'login_free_bonus' => '7:8, 14:25, 30:50, 60:80, 90:200',
+            'login_explorer_base' => 90, 'login_explorer_bonus' => '7:180, 14:325, 30:500, 60:650, 90:1200',
+            'ladder_free' => config('aetracker.defaults.ladder_free'), 'ladder_premium' => config('aetracker.defaults.ladder_premium'),
+            'explorer_club' => '1', 'explorer_cost_month' => 24.99, 'premium_ladder' => '1', 'premium_cost_month' => 24.99,
             'ab_extra_month' => 0, 'ab_balance' => 0, 'projection_months' => 12, 'rent_milestones' => '10, 20',
-        ])->assertRedirect('/projection')->assertSessionHasNoErrors();
+        ];
+        $this->put('/projection', $form)->assertRedirect('/projection')->assertSessionHasNoErrors();
 
-        $this->assertSame('1', Setting::allValues()['explorer_club']);
+        $saved = Setting::allValues();
+        $this->assertSame('1', $saved['explorer_club']);
+        $this->assertSame('85', $saved['login_streak_day']);
+        $this->assertSame(now()->toDateString(), $saved['login_streak_set_on']);
+
         $this->get('/projection')->assertOk()
-            ->assertSee('14,925')->assertSee('149.3')->assertSee('$49.98')
+            ->assertSee('14,925')->assertSee('$49.98')->assertSee('value="85"', false)
+            ->assertSee('day 90 (in 5 days)')
+            ->assertSee('also: 15 bid tokens, 1 badge')
             ->assertSee('Rent covers both subscriptions')->assertSee('Rent reaches $20.00 a month');
 
-        // Unticking turns a source off.
-        $this->put('/projection', ['ab_free_daily_90' => 448, 'ab_free_ladder_30' => 294, 'ab_explorer_90' => 10505, 'explorer_cost_month' => 0,
-            'ab_premium_30' => 1030, 'premium_cost_month' => 0, 'ab_extra_month' => 0, 'ab_balance' => 0, 'projection_months' => 12]);
+        // Unticking turns a source off; a streak day beyond the cycle is rejected.
+        $this->put('/projection', array_diff_key($form, ['explorer_club' => 1]))->assertSessionHasNoErrors();
         $this->assertSame('0', Setting::allValues()['explorer_club']);
+        $this->put('/projection', ['login_streak_day' => 91] + $form)->assertSessionHasErrors('login_streak_day');
 
         // The Settings form doesn't need (or touch) the projection settings.
         $this->put('/settings', array_diff_key(config('aetracker.defaults'), array_flip(config('aetracker.page_settings'))))

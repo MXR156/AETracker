@@ -32,11 +32,15 @@ class ProjectionController extends Controller
     public function update(Request $request)
     {
         $data = $request->validate([
-            'ab_free_daily_90' => ['required', 'numeric', 'min:0'],
-            'ab_free_ladder_30' => ['required', 'numeric', 'min:0'],
-            'ab_explorer_90' => ['required', 'numeric', 'min:0'],
+            'login_streak_day' => ['required', 'integer', 'min:1', 'max:'.max(1, (int) $request->input('login_cycle_days', 90))],
+            'login_cycle_days' => ['required', 'integer', 'min:1', 'max:366'],
+            'login_free_base' => ['required', 'numeric', 'min:0'],
+            'login_free_bonus' => ['nullable', 'string', 'max:1000'],
+            'login_explorer_base' => ['required', 'numeric', 'min:0'],
+            'login_explorer_bonus' => ['nullable', 'string', 'max:1000'],
+            'ladder_free' => ['nullable', 'string', 'max:1000'],
+            'ladder_premium' => ['nullable', 'string', 'max:1000'],
             'explorer_cost_month' => ['required', 'numeric', 'min:0'],
-            'ab_premium_30' => ['required', 'numeric', 'min:0'],
             'premium_cost_month' => ['required', 'numeric', 'min:0'],
             'ab_extra_month' => ['required', 'numeric', 'min:0'],
             'ab_balance' => ['required', 'numeric', 'min:0'],
@@ -45,6 +49,8 @@ class ProjectionController extends Controller
         ]);
         $data['explorer_club'] = $request->boolean('explorer_club') ? '1' : '0';
         $data['premium_ladder'] = $request->boolean('premium_ladder') ? '1' : '0';
+        // The streak day is as of today; it moves on by itself from here.
+        $data['login_streak_set_on'] = now()->toDateString();
 
         foreach ($data as $key => $value) {
             Setting::put($key, (string) $value);
