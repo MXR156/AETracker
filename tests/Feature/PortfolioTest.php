@@ -17,11 +17,12 @@ class PortfolioTest extends TestCase
 
         $this->post('/my-parcels/holdings', ['recorded_on' => '2026-10-01', 'common' => 100, 'rare' => 5, 'epic' => 2, 'legendary' => 1])
             ->assertRedirect()->assertSessionHasNoErrors();
-        $this->post('/my-parcels/holdings/add', ['rarity' => 'common', 'quantity' => 10, 'notes' => 'Boreham'])
+        $this->post('/my-parcels/holdings', ['recorded_on' => '2026-10-10', 'common' => 110, 'rare' => 5, 'epic' => 2, 'legendary' => 1])
             ->assertRedirect()->assertSessionHasNoErrors();
-        $this->post('/my-parcels/holdings/add', ['rarity' => 'rare', 'quantity' => 1])->assertRedirect()->assertSessionHasNoErrors();
+        $this->post('/my-parcels/holdings', ['recorded_on' => '2026-10-10', 'common' => 110, 'rare' => 6, 'epic' => 2, 'legendary' => 1, 'notes' => 'bulk buy'])
+            ->assertRedirect()->assertSessionHasNoErrors();
 
-        // Same-day additions update today's entry instead of adding new ones.
+        // Saving again on the same date corrects that day's entry instead of adding another.
         $this->assertSame(2, Holding::count());
         $current = Holding::current();
         $this->assertSame(110, $current->common);
@@ -111,10 +112,12 @@ class PortfolioTest extends TestCase
         $this->get('/my-parcels')->assertRedirect('/');
 
         // Updating parcels and badges returns to the dashboard's update section.
-        $this->post('/my-parcels/holdings/add', ['rarity' => 'common', 'quantity' => 3])->assertRedirect(route('dashboard').'#update');
+        $this->post('/my-parcels/holdings', ['recorded_on' => '2026-10-01', 'common' => 3, 'rare' => 0, 'epic' => 0, 'legendary' => 0])
+            ->assertRedirect(route('dashboard').'#update');
         $this->put('/my-parcels/badges', ['badges_owned' => 4])->assertRedirect(route('dashboard').'#update');
         $this->get('/')->assertOk()->assertSee('Update my parcels')->assertSee('How many badges do you have?')
-            ->assertSee('in charge')->assertSee('Parcel history');
+            ->assertSee('in charge')->assertSee('Parcel history')->assertDontSee('Bought or lost');
+        $this->post('/my-parcels/holdings/add', ['rarity' => 'common', 'quantity' => 3])->assertStatus(405); // quick add/remove is gone
     }
 
     public function test_settings_save_and_reset(): void

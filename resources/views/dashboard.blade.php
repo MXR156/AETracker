@@ -40,26 +40,13 @@
 @endif
 
 <h2 id="update" style="margin-top:.5rem">Update my parcels &amp; badges</h2>
-<div class="grid grid-3" style="margin-bottom:1.25rem">
+<div class="grid grid-2" style="margin-bottom:1.25rem">
     <div class="card">
-        <h2>Bought or lost some parcels?</h2>
-        <form method="post" action="{{ route('holdings.add') }}">
-            @csrf
-            <div class="form-row">
-                <div class="field"><label for="quantity">Quantity</label><input type="number" id="quantity" name="quantity" value="1" required>
-                    <div class="hint">Negative to remove.</div></div>
-                <div class="field"><label for="rarity">Rarity</label>
-                    <select id="rarity" name="rarity">@foreach ($calc::RARITIES as $r)<option value="{{ $r }}">{{ ucfirst($r) }}</option>@endforeach</select></div>
-            </div>
-            <div class="field"><label for="add_notes">Where / notes <span class="muted">(optional)</span></label><input id="add_notes" name="notes" placeholder="e.g. Boreham"></div>
-            <button class="btn">Add to my parcels</button>
-        </form>
-    </div>
-    <div class="card">
-        <h2>Set exact counts</h2>
+        <h2>My parcels</h2>
+        <p class="muted small" style="margin-top:0">Enter how many you own of each rarity. Saving on the same date again just corrects that day's entry.</p>
         <form method="post" action="{{ route('holdings.store') }}">
             @csrf
-            <div class="form-row" style="grid-template-columns:repeat(2,1fr)">
+            <div class="form-row form-row-4">
                 @foreach ($calc::RARITIES as $r)
                     <div class="field"><label for="h_{{ $r }}">{{ ucfirst($r) }}</label>
                         <input type="number" min="0" id="h_{{ $r }}" name="{{ $r }}" value="{{ old($r, $current?->$r ?? 0) }}" required></div>

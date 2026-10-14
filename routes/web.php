@@ -33,7 +33,6 @@ Route::delete('players/{player}', [PlayerController::class, 'destroy'])->name('p
 Route::redirect('my-parcels', '/'); // My Parcels is now part of the dashboard
 Route::get('my-parcels/planner', [PortfolioController::class, 'planner'])->name('portfolio.planner');
 Route::post('my-parcels/holdings', [HoldingController::class, 'store'])->name('holdings.store');
-Route::post('my-parcels/holdings/add', [HoldingController::class, 'add'])->name('holdings.add');
 Route::delete('my-parcels/holdings/{holding}', [HoldingController::class, 'destroy'])->name('holdings.destroy');
 Route::put('my-parcels/badges', [PortfolioController::class, 'badges'])->name('portfolio.badges');
 
