@@ -84,9 +84,11 @@
                 <div class="field"><label for="cost_per_atlas_buck">Real cost of 1 Atlas Buck</label>
                     <input type="number" step="any" min="0" id="cost_per_atlas_buck" name="cost_per_atlas_buck" value="{{ $v('cost_per_atlas_buck') }}">
                     <div class="hint">e.g. a 1,000 AB pack for 9.99 → 0.00999</div></div>
+                <div class="field"><label for="atlas_bucks_per_badge">Atlas Bucks per badge</label>
+                    <input type="number" step="any" min="0" id="atlas_bucks_per_badge" name="atlas_bucks_per_badge" value="{{ $v('atlas_bucks_per_badge') }}"></div>
                 <div class="field"><label for="cost_per_badge">Real cost of one more badge</label>
                     <input type="number" step="any" min="0" id="cost_per_badge" name="cost_per_badge" value="{{ $v('cost_per_badge') }}">
-                    <div class="hint">Optional - lets the planner compare badges with parcels. 0 if you don't know.</div></div>
+                    <div class="hint">Leave at 0 to use the Atlas Bucks cost above (e.g. 200 AB × the cost of 1 AB).</div></div>
             </div>
         </div>
     </div>

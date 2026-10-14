@@ -167,6 +167,105 @@ class Projection
         return array_values(array_unique($targets));
     }
 
+    // ---- Progress so far ----------------------------------------------------------------------
+
+    public function startedOn(): ?Carbon
+    {
+        return filled($this->settings['account_started_on'] ?? null) ? Carbon::parse($this->settings['account_started_on'])->startOfDay() : null;
+    }
+
+    /** 'rewards' (my reward schedule) or 'history' (keep up my pace so far). */
+    public function basis(): string
+    {
+        $started = $this->startedOn();
+
+        return ($this->settings['projection_basis'] ?? 'rewards') === 'history' && $started && $started->lt(Carbon::today()) ? 'history' : 'rewards';
+    }
+
+    public function usesOwnMix(): bool
+    {
+        return (bool) ($this->settings['use_own_mix'] ?? false);
+    }
+
+    /** My current rarity mix as shares of 1, or null without any parcels. */
+    public function ownMix(?Holding $holding = null): ?array
+    {
+        $holding ??= Holding::current();
+        $total = $holding?->total() ?? 0;
+
+        return $total > 0 ? array_map(fn ($n) => $n / $total, $holding->counts()) : null;
+    }
+
+    /** How many free badges the ladders have given between two dates (one per month on the badge step's day). */
+    public function ladderBadgesBetween(Carbon $from, Carbon $to): int
+    {
+        $steps = [];
+        foreach ([$this->ladder('free'), $this->premiumLadder() ? $this->ladder('premium') : []] as $ladder) {
+            foreach ($ladder as $i => $step) {
+                if ($step['badges']) {
+                    $steps[$i + 1] = ($steps[$i + 1] ?? 0) + $step['badges'];
+                }
+            }
+        }
+        $count = 0;
+        for ($month = $from->copy()->startOfMonth(); $month->lte($to); $month->addMonth()) {
+            foreach ($steps as $day => $badges) {
+                $date = $month->copy()->day(min($day, $month->daysInMonth));
+                if ($date->gte($from) && $date->lte($to)) {
+                    $count += $badges;
+                }
+            }
+        }
+
+        return $count;
+    }
+
+    /**
+     * What I've built since I started: AB put into parcels and bought badges, and my pace per
+     * month. Null until a start date and parcel counts are entered.
+     */
+    public function history(?Holding $holding = null, ?Carbon $today = null): ?array
+    {
+        $started = $this->startedOn();
+        $holding ??= Holding::current();
+        $today = ($today ?? Carbon::today())->copy()->startOfDay();
+        if (! $started || ! $holding || $holding->total() === 0 || $started->gte($today)) {
+            return null;
+        }
+
+        $days = $started->diffInDays($today);
+        $months = $days / self::DAYS_PER_MONTH;
+        $parcels = $holding->total();
+        $badges = $this->calc->badgesOwned();
+        $freeBadges = min($badges, $this->ladderBadgesBetween($started, $today));
+        $boughtBadges = $badges - $freeBadges;
+        $parcelAb = $parcels * $this->abPerParcel();
+        $badgeAb = $boughtBadges * $this->calc->badgeAtlasBucks();
+        $totalAb = $parcelAb + $badgeAb;
+
+        return [
+            'started' => $started,
+            'days' => $days,
+            'months' => $months,
+            'parcels' => $parcels,
+            'parcel_ab' => $parcelAb,
+            'badges' => $badges,
+            'free_badges' => $freeBadges,
+            'bought_badges' => $boughtBadges,
+            'badge_ab' => $badgeAb,
+            'total_ab' => $totalAb,
+            'ab_per_day' => $totalAb / $days,
+            'ab_per_90' => $totalAb / $days * 90,
+            'parcel_ab_per_day' => $parcelAb / $days,
+            'parcels_per_month' => $parcels / $months,
+            'badges_per_day' => $badges / $days,
+            'badges_per_month' => $badges / $months,
+            'bought_badges_per_month' => $boughtBadges / $months,
+            'vs_rewards' => $this->abPer90Days() > 0 ? ($totalAb / $days * 90) / $this->abPer90Days() : null,
+            'mix' => $this->ownMix($holding),
+        ];
+    }
+
     // ---- The projection -----------------------------------------------------------------------
 
     /**
@@ -180,17 +279,24 @@ class Projection
         $holding ??= Holding::current();
         $counts = $holding ? array_map('floatval', $holding->counts()) : array_fill_keys(EarningsCalculator::RARITIES, 0.0);
         $badges = $this->calc->badgesOwned();
-        $mix = $this->calc->expectedNewParcelMix();
+        $mix = ($this->usesOwnMix() ? $this->ownMix($holding) : null) ?? $this->calc->expectedNewParcelMix();
         $abPerParcel = $this->abPerParcel();
         $subsPerMonth = $this->subscriptionCostPerMonth();
 
-        $loginFree = $this->loginSchedule('free');
-        $loginExplorer = $this->explorerClub() ? $this->loginSchedule('explorer') : [];
-        $ladders = [$this->ladder('free')];
-        if ($this->premiumLadder()) {
-            $ladders[] = $this->ladder('premium');
+        // "My pace so far": keep buying parcels and gaining badges at the rate I have since I started.
+        $history = $this->basis() === 'history' ? $this->history($holding, $today) : null;
+        $badgeCarry = 0.0;
+
+        $loginFree = $history ? [] : $this->loginSchedule('free');
+        $loginExplorer = ! $history && $this->explorerClub() ? $this->loginSchedule('explorer') : [];
+        $ladders = [];
+        if (! $history) {
+            $ladders[] = $this->ladder('free');
+            if ($this->premiumLadder()) {
+                $ladders[] = $this->ladder('premium');
+            }
         }
-        $extraPerMonth = $this->num('ab_extra_month');
+        $extraPerMonth = $history ? 0 : $this->num('ab_extra_month');
 
         $balance = $this->num('ab_balance');
         $bought = $boughtThisMonth = 0;
@@ -233,6 +339,15 @@ class Projection
             // Atlas Bucks in: login streak, ladder step (days 1-15 of the month), anything else.
             $streak = $this->streakDay($day);
             $ab = ($loginFree[$streak] ?? 0) + ($loginExplorer[$streak] ?? 0) + $extraPerMonth / $day->daysInMonth;
+            if ($history) {
+                $ab += $history['parcel_ab_per_day'];
+                $badgeCarry += $history['badges_per_day'];
+                if ($badgeCarry >= 1) {
+                    $badges += (int) floor($badgeCarry);
+                    $badgeCarry -= floor($badgeCarry);
+                    $changed = true;
+                }
+            }
             foreach ($ladders as $ladder) {
                 $step = $ladder[$day->day - 1] ?? null;
                 if ($step) {

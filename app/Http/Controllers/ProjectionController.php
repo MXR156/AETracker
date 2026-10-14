@@ -20,6 +20,7 @@ class ProjectionController extends Controller
             'rows' => $result['rows'],
             'sources' => $projection->sources(),
             'takeovers' => $projection->takeovers($result['rows']),
+            'history' => $projection->history(),
             'settings' => $projection->settings,
             'chart' => array_map(fn ($r) => [
                 'label' => $r['month'] === 0 ? 'Now' : $r['date']->format('M y'),
@@ -46,7 +47,11 @@ class ProjectionController extends Controller
             'ab_balance' => ['required', 'numeric', 'min:0'],
             'projection_months' => ['required', 'integer', 'min:1', 'max:120'],
             'rent_milestones' => ['nullable', 'string', 'max:255'],
+            'account_started_on' => ['nullable', 'date', 'before:tomorrow'],
+            'projection_basis' => ['required', 'in:rewards,history'],
         ]);
+        $data['account_started_on'] ??= '';
+        $data['use_own_mix'] = $request->boolean('use_own_mix') ? '1' : '0';
         $data['explorer_club'] = $request->boolean('explorer_club') ? '1' : '0';
         $data['premium_ladder'] = $request->boolean('premium_ladder') ? '1' : '0';
         // The streak day is as of today; it moves on by itself from here.

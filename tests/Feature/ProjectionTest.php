@@ -130,6 +130,59 @@ class ProjectionTest extends TestCase
         $this->assertGreaterThan($t->still['month'], $t->growing['month']);
     }
 
+    private function myAccount(): Holding
+    {
+        return new Holding(['common' => 234, 'rare' => 104, 'epic' => 63, 'legendary' => 23]); // 424 parcels
+    }
+
+    public function test_progress_so_far_from_the_start_date(): void
+    {
+        $p = $this->projection(['account_started_on' => '2025-10-14', 'badges_owned' => '57', 'explorer_club' => '0', 'premium_ladder' => '0']);
+        $h = $p->history($this->myAccount(), Carbon::parse('2026-10-14'));
+
+        $this->assertSame(365.0, (float) $h['days']);
+        $this->assertSame(42400.0, (float) $h['parcel_ab']);       // 424 x 100 AB
+        $this->assertSame(12, $h['free_badges']);                  // ladder badge on the 15th, Oct 2025 - Sep 2026
+        $this->assertSame(45, $h['bought_badges']);
+        $this->assertSame(9000.0, (float) $h['badge_ab']);         // 45 x 200 AB
+        $this->assertSame(51400.0, (float) $h['total_ab']);
+        $this->assertEqualsWithDelta(51400 / 365 * 90, $h['ab_per_90'], 1e-6);
+        $this->assertEqualsWithDelta(424 / 12, $h['parcels_per_month'], 1e-9);
+        $this->assertEqualsWithDelta(51400 / 365 * 90 / 1330, $h['vs_rewards'], 1e-9); // vs free rewards only
+        $this->assertEqualsWithDelta(234 / 424, $h['mix']['common'], 1e-9);
+
+        // No start date (or one in the future) -> no history.
+        $this->assertNull($this->projection()->history($this->myAccount()));
+    }
+
+    public function test_projecting_at_my_pace_so_far(): void
+    {
+        $p = $this->projection([
+            'account_started_on' => '2025-10-14', 'badges_owned' => '57', 'projection_basis' => 'history', 'use_own_mix' => '1',
+        ]);
+        $today = Carbon::parse('2026-10-14');
+        $this->assertSame('history', $p->basis());
+
+        $rows = $p->run($this->myAccount(), 12, $today)['rows'];
+        $last = end($rows);
+        $days = $today->diffInDays($last['date']);
+
+        // Keeps buying parcels at 42,400 AB a year and gaining 57 badges a year; ignores the reward schedule.
+        $this->assertEqualsWithDelta(42400 / 365 * $days / 100, $last['bought_total'], 1);
+        $this->assertEqualsWithDelta(57 + 57 / 365 * $days, $last['badges'], 1);
+        $this->assertSame(0, $last['upgrades']);
+        // New parcels follow my mix (55% common), not the 85% common odds.
+        $this->assertTrue($p->usesOwnMix());
+    }
+
+    public function test_badge_cost_comes_from_its_ab_price(): void
+    {
+        $calc = new EarningsCalculator(config('aetracker.defaults'));
+        $this->assertEqualsWithDelta(2.0, $calc->badgeCost(), 1e-9);               // 200 AB x $0.01
+        $calc = new EarningsCalculator(['cost_per_badge' => '3.5'] + config('aetracker.defaults'));
+        $this->assertEqualsWithDelta(3.5, $calc->badgeCost(), 1e-9);
+    }
+
     public function test_page_shows_and_saves_the_projection(): void
     {
         Holding::create(['recorded_on' => now(), 'common' => 421]);
@@ -143,6 +196,7 @@ class ProjectionTest extends TestCase
             'ladder_free' => config('aetracker.defaults.ladder_free'), 'ladder_premium' => config('aetracker.defaults.ladder_premium'),
             'explorer_club' => '1', 'explorer_cost_month' => 24.99, 'premium_ladder' => '1', 'premium_cost_month' => 24.99,
             'ab_extra_month' => 0, 'ab_balance' => 0, 'projection_months' => 12, 'rent_milestones' => '10, 20',
+            'account_started_on' => now()->subYear()->toDateString(), 'projection_basis' => 'rewards', 'use_own_mix' => '1',
         ];
         $this->put('/projection', $form)->assertRedirect('/projection')->assertSessionHasNoErrors();
 
@@ -155,7 +209,14 @@ class ProjectionTest extends TestCase
             ->assertSee('14,925')->assertSee('$49.98')->assertSee('value="85"', false)
             ->assertSee('day 90 (in 5 days)')
             ->assertSee('also: 15 bid tokens, 1 badge')
-            ->assertSee('Rent covers both subscriptions')->assertSee('Rent reaches $20.00 a month');
+            ->assertSee('Rent covers both subscriptions')->assertSee('Rent reaches $20.00 a month')
+            ->assertSee('Your progress so far')->assertSee('42,100 AB')->assertSee('New parcels in this projection follow your mix');
+        $this->assertSame('1', Setting::allValues()['use_own_mix']);
+
+        // Switching to "my pace so far".
+        $this->put('/projection', ['projection_basis' => 'history'] + $form)->assertSessionHasNoErrors();
+        $this->get('/projection')->assertOk()->assertSee('Projected at');
+        $this->put('/projection', ['account_started_on' => now()->addDay()->toDateString()] + $form)->assertSessionHasErrors('account_started_on');
 
         // Unticking turns a source off; a streak day beyond the cycle is rejected.
         $this->put('/projection', array_diff_key($form, ['explorer_club' => 1]))->assertSessionHasNoErrors();

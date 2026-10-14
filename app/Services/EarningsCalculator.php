@@ -74,9 +74,17 @@ class EarningsCalculator
         return max(0, (int) ($this->settings['badges_owned'] ?? 0));
     }
 
+    /** Real cost of one more badge: the cost set in Settings, or else its AB cost (200 AB) in money. */
     public function badgeCost(): float
     {
-        return max(0, (float) ($this->settings['cost_per_badge'] ?? 0));
+        $cost = max(0, (float) ($this->settings['cost_per_badge'] ?? 0));
+
+        return $cost > 0 ? $cost : $this->badgeAtlasBucks() * max(0, (float) ($this->settings['cost_per_atlas_buck'] ?? 0));
+    }
+
+    public function badgeAtlasBucks(): float
+    {
+        return max(0, (float) ($this->settings['atlas_bucks_per_badge'] ?? 0));
     }
 
     /**

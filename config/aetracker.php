@@ -28,7 +28,7 @@ return [
         'login_cycle_days', 'login_streak_day', 'login_streak_set_on', 'login_free_base', 'login_free_bonus',
         'login_explorer_base', 'login_explorer_bonus', 'ladder_free', 'ladder_premium',
         'explorer_club', 'explorer_cost_month', 'premium_ladder', 'premium_cost_month', 'ab_extra_month', 'ab_balance',
-        'projection_months', 'rent_milestones',
+        'projection_months', 'rent_milestones', 'account_started_on', 'projection_basis', 'use_own_mix',
     ],
 
     'defaults' => [
@@ -71,7 +71,9 @@ return [
         'atlas_bucks_per_parcel' => '100',
         'cost_per_atlas_buck' => '0.01',
 
-        // Real cost of getting one more badge, for the planner. 0 = unknown.
+        // A badge costs this many Atlas Bucks (the reward ladder's monthly badge is free).
+        'atlas_bucks_per_badge' => '200',
+        // Real cost of one more badge for the planner; 0 = work it out from the AB cost above.
         'cost_per_badge' => '0',
 
         // Projection: where Atlas Bucks come from.
@@ -96,6 +98,9 @@ return [
         'premium_cost_month' => '0',      // Premium Rewards Ladder subscription, per month
         'ab_extra_month' => '0',          // anything else (Arcade, spins, commissions), per month
         'ab_balance' => '0',              // AB you have right now
+        'account_started_on' => '',       // when you started playing - for "progress so far"
+        'projection_basis' => 'rewards',  // 'rewards' = reward schedule, 'history' = my pace so far
+        'use_own_mix' => '0',             // 1 = new parcels follow my current rarity mix, not the odds
         'projection_months' => '24',
         'rent_milestones' => '10, 20, 30, 50', // monthly rent targets to show
     ],

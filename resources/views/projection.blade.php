@@ -64,6 +64,20 @@
         </div>
     </details>
 
+    <div class="form-row">
+        <div class="field"><label for="account_started_on">When did you start playing?</label>
+            <input type="date" id="account_started_on" name="account_started_on" value="{{ old('account_started_on', $settings['account_started_on'] ?? '') }}" max="{{ now()->toDateString() }}">
+            <div class="hint">Used to work out your progress so far.</div></div>
+        <div class="field"><label for="projection_basis">Base the projection on</label>
+            <select id="projection_basis" name="projection_basis">
+                <option value="rewards" @selected(($settings['projection_basis'] ?? 'rewards') === 'rewards')>My reward schedule (above)</option>
+                <option value="history" @selected(($settings['projection_basis'] ?? '') === 'history')>My pace so far (needs a start date)</option>
+            </select></div>
+        <div class="field"><label>&nbsp;</label>
+            <label style="font-weight:400"><input type="checkbox" name="use_own_mix" value="1" @checked($settings['use_own_mix'] ?? false)> New parcels follow my current rarity mix</label>
+            <div class="hint">Instead of the odds in Settings.</div></div>
+    </div>
+
     <div class="form-row" style="align-items:end">
         <div class="field"><label for="projection_months">Months to project</label>
             <input type="number" min="1" max="120" id="projection_months" name="projection_months" value="{{ $v('projection_months') }}"></div>
@@ -73,11 +87,63 @@
     </div>
 </form>
 
+@if ($history)
+    @php($h = $history)
+    <div class="card">
+        <h2>Your progress so far <span class="muted small" style="font-weight:400">since {{ $h['started']->format('j M Y') }} · {{ number_format($h['months'], 1) }} months</span></h2>
+        <div class="grid grid-2" style="gap:1.25rem">
+            <div class="table-wrap">
+                <table>
+                    <tbody>
+                    <tr><td>Parcels</td><td class="num">{{ number_format($h['parcels']) }}</td>
+                        <td class="num">{{ number_format($h['parcel_ab']) }} AB</td></tr>
+                    <tr><td>Badges <div class="small muted">{{ number_format($h['free_badges']) }} free from the reward ladder, {{ number_format($h['bought_badges']) }} bought</div></td>
+                        <td class="num">{{ number_format($h['badges']) }}</td>
+                        <td class="num">{{ number_format($h['badge_ab']) }} AB</td></tr>
+                    <tr><td><strong>Total put in</strong></td><td></td><td class="num"><strong>{{ number_format($h['total_ab']) }} AB</strong></td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="table-wrap">
+                <table>
+                    <tbody>
+                    <tr><td>Your pace</td><td class="num"><strong>{{ number_format($h['ab_per_90']) }} AB</strong> per 90 days</td></tr>
+                    <tr><td></td><td class="num">{{ number_format($h['parcels_per_month'], 1) }} parcels and {{ number_format($h['badges_per_month'], 1) }} badges a month</td></tr>
+                    <tr><td>Your reward schedule</td><td class="num">{{ number_format($p->abPer90Days()) }} AB per 90 days</td></tr>
+                    @if ($h['vs_rewards'])
+                        <tr><td></td><td class="num">
+                            @if ($h['vs_rewards'] >= 1)
+                                Your pace is <strong>{{ number_format($h['vs_rewards'], 2) }}×</strong> your reward schedule - you've put in more than rewards alone give.
+                            @else
+                                Your pace is <strong>{{ number_format($h['vs_rewards'] * 100) }}%</strong> of your reward schedule.
+                            @endif
+                        </td></tr>
+                    @endif
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        @php($odds = $p->calc->expectedNewParcelMix())
+        <p class="small" style="margin-bottom:0">
+            <strong>Your rarity mix:</strong>
+            @foreach ($h['mix'] as $rarity => $share){{ ucfirst($rarity) }} {{ number_format($share * 100, 1) }}%{{ $loop->last ? '' : ' · ' }}@endforeach
+            <span class="muted">- the odds in Settings are
+            @foreach ($odds as $rarity => $share){{ number_format($share * 100, 1) }}%{{ $loop->last ? '' : ' / ' }}@endforeach.
+            {{ $p->usesOwnMix() ? 'New parcels in this projection follow your mix.' : 'Tick “New parcels follow my current rarity mix” to project with yours.' }}</span>
+        </p>
+    </div>
+@elseif (blank($settings['account_started_on'] ?? null))
+    <div class="notice">Add when you started playing (below the reward schedules) to see your progress so far and project at your own pace.</div>
+@endif
+
 <div class="stats">
-    <div class="stat"><div class="label">AB per 90 days</div><div class="value">{{ number_format($p->abPer90Days()) }}</div>
-        <div class="sub">{{ number_format($p->abPerDay(), 1) }} a day on average</div></div>
-    <div class="stat"><div class="label">Parcels per 90 days</div><div class="value">{{ number_format($p->abPerDay() * 90 / $p->abPerParcel(), 1) }}</div>
-        <div class="sub">{{ number_format($p->abPerDay() * 365 / $p->abPerParcel()) }} a year</div></div>
+    @php($pace = $p->basis() === 'history' && $history)
+    @php($ab90 = $pace ? $history['ab_per_90'] : $p->abPer90Days())
+    @php($parcels90 = $pace ? $history['parcel_ab_per_day'] * 90 / $p->abPerParcel() : $p->abPer90Days() / $p->abPerParcel())
+    <div class="stat"><div class="label">AB per 90 days{{ $pace ? ' (your pace)' : '' }}</div><div class="value">{{ number_format($ab90) }}</div>
+        <div class="sub">{{ number_format($ab90 / 90, 1) }} a day on average</div></div>
+    <div class="stat"><div class="label">Parcels per 90 days</div><div class="value">{{ number_format($parcels90, 1) }}</div>
+        <div class="sub">{{ number_format($parcels90 / 90 * 365) }} a year</div></div>
     <div class="stat"><div class="label">Subscriptions</div><div class="value">{{ ae_money($p->subscriptionCostPerMonth(), 2) }}</div>
         <div class="sub">a month · {{ ae_money($p->subscriptionCostPerMonth() * 3, 2) }} per 90 days</div></div>
     <div class="stat"><div class="label">Parcels in {{ $last['month'] }} months</div><div class="value">{{ number_format($last['parcels']) }}</div>
@@ -195,6 +261,9 @@
     </details>
 </div>
 
+@if ($p->basis() === 'history' && $history)
+    <div class="notice">Projected at <strong>your pace so far</strong>: {{ number_format($history['parcels_per_month'], 1) }} parcels and {{ number_format($history['badges_per_month'], 1) }} badges a month. The reward schedule above isn't used.</div>
+@endif
 <div class="notice">A forecast, not a promise: it assumes you log in every day (missing one resets the streak), claim one ladder step a day from the 1st of each month, spend AB on parcels as soon as you have {{ number_format($p->abPerParcel()) }}, and that reward amounts and game rates stay the same. New parcels follow the rarity odds in Settings; ladder badges and legendary upgrades are added as you get them. Today's rewards are assumed already collected.</div>
 @endsection
 
