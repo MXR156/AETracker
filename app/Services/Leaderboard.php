@@ -103,6 +103,24 @@ class Leaderboard
         return max(0, $bestOther - $mine + 1);
     }
 
+    /**
+     * How fast a player has been growing here, in parcels per month, from their first to their
+     * latest snapshot. Null when there's only one snapshot of them to go on.
+     */
+    public function growthPerMonth(Player $player): ?float
+    {
+        $seen = $this->snapshots
+            ->map(fn ($s) => [$s->recorded_on, $s->entries->firstWhere('player_id', $player->id)?->parcels])
+            ->filter(fn ($p) => $p[1] !== null)
+            ->values();
+        if ($seen->count() < 2) {
+            return null;
+        }
+        $days = $seen->first()[0]->diffInDays($seen->last()[0]);
+
+        return $days > 0 ? ($seen->last()[1] - $seen->first()[1]) / $days * (365 / 12) : null;
+    }
+
     /** Players that left the board since the previous snapshot. */
     public function dropped(): Collection
     {

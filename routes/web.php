@@ -6,6 +6,7 @@ use App\Http\Controllers\ImportController;
 use App\Http\Controllers\LocationController;
 use App\Http\Controllers\PlayerController;
 use App\Http\Controllers\PortfolioController;
+use App\Http\Controllers\ProjectionController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\SnapshotController;
 use Illuminate\Support\Facades\Route;
@@ -35,6 +36,10 @@ Route::get('my-parcels/planner', [PortfolioController::class, 'planner'])->name(
 Route::post('my-parcels/holdings', [HoldingController::class, 'store'])->name('holdings.store');
 Route::delete('my-parcels/holdings/{holding}', [HoldingController::class, 'destroy'])->name('holdings.destroy');
 Route::put('my-parcels/badges', [PortfolioController::class, 'badges'])->name('portfolio.badges');
+
+// Projection: AB income -> parcels -> rent over the coming months
+Route::get('projection', [ProjectionController::class, 'index'])->name('projection.index');
+Route::put('projection', [ProjectionController::class, 'update'])->name('projection.update');
 
 Route::get('settings', [SettingsController::class, 'edit'])->name('settings.edit');
 Route::put('settings', [SettingsController::class, 'update'])->name('settings.update');

@@ -22,8 +22,8 @@ class SettingsController extends Controller
         }
 
         $rules = ['currency_symbol' => ['required', 'string', 'max:5'], 'boost_tiers' => ['required', 'string'], 'badge_tiers' => ['nullable', 'string'], 'boost_tier_basis' => ['required', 'in:parcels,rent']];
-        // badges_owned is set on the dashboard, not on this form.
-        foreach (array_diff(array_keys(config('aetracker.defaults')), ['badges_owned']) as $key) {
+        // Some settings are changed on their own pages (badges on the dashboard, AB income on Projection).
+        foreach (array_diff(array_keys(config('aetracker.defaults')), config('aetracker.page_settings')) as $key) {
             $rules[$key] ??= ['required', 'numeric', 'min:0'];
         }
         $rules['boost_hours_per_day'][] = 'max:24';

@@ -22,6 +22,14 @@ return [
 
     'rarities' => ['common', 'rare', 'epic', 'legendary'],
 
+    // Settings changed on their own pages (Dashboard, Projection), not on the Settings form.
+    'page_settings' => [
+        'badges_owned',
+        'ab_free_daily_90', 'ab_free_ladder_30', 'explorer_club', 'ab_explorer_90', 'explorer_cost_month',
+        'premium_ladder', 'ab_premium_30', 'premium_cost_month', 'ab_extra_month', 'ab_balance',
+        'projection_months', 'rent_milestones',
+    ],
+
     'defaults' => [
         'currency_symbol' => '$',
 
@@ -64,5 +72,19 @@ return [
 
         // Real cost of getting one more badge, for the planner. 0 = unknown.
         'cost_per_badge' => '0',
+
+        // Projection: Atlas Bucks coming in from rewards, each over the period the game gives it.
+        'ab_free_daily_90' => '448',     // free daily rewards, per 90 days
+        'ab_free_ladder_30' => '294',    // free reward ladder, per 30 days
+        'explorer_club' => '0',          // 1 = I'm in Explorer Club
+        'ab_explorer_90' => '10505',     // Explorer Club, per 90 days
+        'explorer_cost_month' => '0',    // Explorer Club subscription, per month
+        'premium_ladder' => '0',         // 1 = I'm on the Premium Rewards Ladder
+        'ab_premium_30' => '1030',       // Premium Rewards Ladder, per 30 days
+        'premium_cost_month' => '0',     // Premium Rewards Ladder subscription, per month
+        'ab_extra_month' => '0',         // anything else (Arcade, spins, commissions), per month
+        'ab_balance' => '0',             // AB you have right now
+        'projection_months' => '24',
+        'rent_milestones' => '10, 20, 30, 50', // monthly rent targets to show
     ],
 ];
