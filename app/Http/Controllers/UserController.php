@@ -52,6 +52,14 @@ class UserController extends Controller
         return redirect()->route('users.index')->with('status', "Updated {$user->name}.");
     }
 
+    /** Free up the player an account linked as "me" (e.g. it was claimed by mistake). Which player isn't shown. */
+    public function unlinkPlayer(User $user)
+    {
+        $user->update(['player_id' => null]);
+
+        return redirect()->route('users.index')->with('status', "{$user->name} no longer has a player linked as “me”.");
+    }
+
     public function destroy(Request $request, User $user)
     {
         if ($user->is($request->user())) {

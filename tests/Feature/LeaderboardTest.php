@@ -29,7 +29,7 @@ class LeaderboardTest extends TestCase
             'paste' => "Kage_uvlf 20\nBlocksta 15",
         ])->assertRedirect("/locations/{$location->id}")->assertRedirect()->assertSessionHasNoErrors();
 
-        Player::where('username', 'SuperSparrow')->update(['is_me' => true]);
+        auth()->user()->update(['player_id' => Player::where('username', 'SuperSparrow')->value('id')]);
 
         // Second snapshot: LogisticHawk overtakes, Blocksta leaves, a newcomer arrives.
         $this->post("/locations/{$location->id}/snapshots", [

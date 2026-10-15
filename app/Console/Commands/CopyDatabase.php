@@ -2,6 +2,8 @@
 
 namespace App\Console\Commands;
 
+use App\Models\User;
+use App\Services\AccountAdoption;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -19,7 +21,10 @@ class CopyDatabase extends Command
     protected $description = 'Copy all tracker data from a SQLite file into the configured database (e.g. MySQL)';
 
     /** Tracker tables, parents before children so foreign keys are satisfied. Sessions, cache and jobs are skipped. */
-    public const TABLES = ['users', 'locations', 'players', 'snapshots', 'snapshot_entries', 'holdings', 'settings'];
+    public const TABLES = ['boost_regions', 'locations', 'players', 'users', 'user_settings', 'snapshots', 'snapshot_entries', 'holdings', 'settings'];
+
+    /** Copied over whatever the target has, rather than counting as a clash (a new database starts with a default country). */
+    private const ALWAYS_REPLACED = ['boost_regions'];
 
     private const SOURCE = 'aetracker_copy_source';
 
@@ -61,9 +66,9 @@ class CopyDatabase extends Command
 
             // Logins are only copied if the SQLite file has some, so an account you've already
             // made in the target database isn't counted as a clash or wiped by --replace.
-            $tables = $source->table('users')->exists() ? self::TABLES : array_values(array_diff(self::TABLES, ['users']));
+            $tables = $source->table('users')->exists() ? self::TABLES : array_values(array_diff(self::TABLES, ['users', 'user_settings']));
 
-            $notEmpty = array_filter($tables, fn ($t) => $target->table($t)->exists());
+            $notEmpty = array_filter(array_diff($tables, self::ALWAYS_REPLACED), fn ($t) => $target->table($t)->exists());
             if ($notEmpty && ! $this->option('replace')) {
                 $this->error('The target database already has tracker data ('.implode(', ', $notEmpty).').');
                 $this->line('Run again with --replace to empty those tables and copy over them.');
@@ -81,6 +86,10 @@ class CopyDatabase extends Command
                     });
                 }
 
+                foreach (self::ALWAYS_REPLACED as $table) {
+                    $target->table($table)->delete();
+                }
+
                 foreach ($tables as $table) {
                     $counts[$table] = 0;
                     $source->table($table)->orderBy($table === 'settings' ? 'key' : 'id')->chunk(500, function ($rows) use ($target, $table, &$counts) {
@@ -91,6 +100,16 @@ class CopyDatabase extends Command
             });
 
             $this->resetAutoIncrements($target, $tables);
+
+            // Anyone whose chosen country didn't come across goes back to the default.
+            $target->table('user_settings')->where('key', 'boost_region_id')
+                ->whereNotIn('value', $target->table('boost_regions')->pluck('id')->map(fn ($id) => (string) $id))->delete();
+
+            // Data from before per-account logins goes to the first admin, if there is one.
+            if (AccountAdoption::hasOrphans() && ($admin = User::where('is_admin', true)->orderBy('id')->first())) {
+                AccountAdoption::adopt($admin->id);
+                $this->line("Parcels, badges, projection settings and “me” from the copy now belong to {$admin->email}.");
+            }
 
             $this->newLine();
             $this->table(['Table', 'Rows copied'], collect($counts)->map(fn ($n, $t) => [$t, $n])->values()->all());

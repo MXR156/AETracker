@@ -16,7 +16,7 @@ class PortfolioTest extends TestCase
         $this->get('/')->assertOk()->assertSee('Start by entering');
 
         // An earlier day's count, then two saves today (no date or notes needed).
-        Holding::create(['recorded_on' => now()->subWeek(), 'common' => 100, 'rare' => 5, 'epic' => 2, 'legendary' => 1]);
+        Holding::create(['user_id' => auth()->id(), 'recorded_on' => now()->subWeek(), 'common' => 100, 'rare' => 5, 'epic' => 2, 'legendary' => 1]);
         $this->post('/my-parcels/holdings', ['common' => 110, 'rare' => 5, 'epic' => 2, 'legendary' => 1])
             ->assertRedirect()->assertSessionHasNoErrors();
         $this->post('/my-parcels/holdings', ['common' => 110, 'rare' => 6, 'epic' => 2, 'legendary' => 1])
@@ -123,19 +123,16 @@ class PortfolioTest extends TestCase
 
     public function test_settings_save_and_reset(): void
     {
-        $this->put('/settings', array_merge(config('aetracker.defaults'), ['boost_hours_per_day' => 8]))
+        $this->put('/settings', array_merge(config('aetracker.defaults'), ['rent_common' => '0.00000000111']))
             ->assertRedirect()->assertSessionHasNoErrors();
-        $this->assertSame('8', Setting::allValues()['boost_hours_per_day']);
-
-        $this->put('/settings', array_merge(config('aetracker.defaults'), ['boost_tiers' => 'rubbish']))
-            ->assertSessionHasErrors('boost_tiers');
+        $this->assertSame('0.00000000111', Setting::allValues()['rent_common']);
 
         $this->put('/settings', array_merge(config('aetracker.defaults'), ['boost_tier_basis' => 'rent']))
             ->assertSessionHasNoErrors();
         $this->assertSame('rent', Setting::allValues()['boost_tier_basis']);
-        $this->get('/settings')->assertOk()->assertSee('Tiers are based on');
+        $this->get('/settings')->assertOk()->assertSee('Tiers are based on')->assertSee('United Kingdom');
 
         $this->put('/settings', ['reset' => 1]);
-        $this->assertSame(config('aetracker.defaults.boost_hours_per_day'), Setting::allValues()['boost_hours_per_day']);
+        $this->assertSame(config('aetracker.defaults.rent_common'), Setting::allValues()['rent_common']);
     }
 }

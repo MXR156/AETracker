@@ -24,7 +24,8 @@
     <div class="stat"><div class="label">Parcels</div><div class="value">{{ number_format($e['parcels']) }}</div>
         <div class="sub">@foreach ($calc::RARITIES as $r){{ $e['counts'][$r] ?? 0 }} {{ substr($r, 0, 1) === 'l' ? 'leg' : substr($r, 0, 3) }}@if (! $loop->last) · @endif @endforeach</div></div>
     <div class="stat"><div class="label">Badges</div><div class="value">{{ number_format($badges) }}</div><div class="sub">+{{ ae_num($e['badge_percent'], 2) }}% rent</div></div>
-    <div class="stat"><div class="label">Ad boost</div><div class="value">{{ ae_num($e['boost_multiplier'], 2) }}×</div><div class="sub">tier from {{ number_format($e['tier_amount']) }} {{ $calc->tierBasis() === 'rent' ? 'equiv.' : 'parcels' }}</div></div>
+    <div class="stat"><div class="label">Ad boost</div><div class="value">{{ ae_num($e['boost_multiplier'], 2) }}×</div><div class="sub">tier from {{ number_format($e['tier_amount']) }} {{ $calc->tierBasis() === 'rent' ? 'equiv.' : 'parcels' }}
+        @isset($calc->settings['boost_region_name']) · <a href="{{ route('account.edit') }}#preferences">{{ $calc->settings['boost_region_name'] }}</a>@endisset</div></div>
     <div class="stat"><div class="label">Per month (boosted)</div><div class="value" style="font-size:1.1rem">{{ ae_earn($e['boosted_per_month']) }}</div><div class="sub">{{ ae_earn($e['boosted_per_year']) }} / year</div></div>
     @if ($me)
         <div class="stat"><div class="label">Leader in</div><div class="value">{{ $leading->count() }}</div><div class="sub">of {{ $leading->count() + $chasing->count() }} locations you're in</div></div>
@@ -94,7 +95,7 @@
                 @endforelse
                 </tbody>
             </table>
-            <p class="muted small" style="margin-bottom:0">Change the tiers in <a href="{{ route('settings.edit') }}">Settings</a>.</p>
+            <p class="muted small" style="margin-bottom:0">Badge tiers for {{ $calc->settings['boost_region_name'] ?? 'your country' }}, from {!! ae_settings_link() !!}.</p>
         </details>
     </div>
 </div>
@@ -130,7 +131,7 @@
     </table>
     <p class="muted small" style="margin-bottom:0">
         Base = no ad boost. With ad boost = boosted all day at your {{ ae_num($e['boost_multiplier'], 2) }}× tier{{ $sb ? ', plus '.ae_num($e['super_days'], 2).' Super Boost days (SBd) a year at '.ae_num($e['super_multiplier'], 2).'×' : '' }}.
-        Month = a twelfth of a year. Change these in <a href="{{ route('settings.edit') }}">Settings</a>.
+        Month = a twelfth of a year. Rates from {!! ae_settings_link() !!}; your country and boosted hours are on <a href="{{ route('account.edit') }}#preferences">your account</a>.
     </p>
 </div>
 

@@ -29,7 +29,7 @@ class DashboardController extends Controller
 
         // My parcels, badges and earnings
         $calc = new EarningsCalculator;
-        $holdings = Holding::orderByDesc('recorded_on')->orderByDesc('id')->get();
+        $holdings = Holding::for()->orderByDesc('recorded_on')->orderByDesc('id')->get();
         $current = $holdings->first();
         $badges = $calc->badgesOwned();
 

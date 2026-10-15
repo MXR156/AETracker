@@ -21,7 +21,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        // Admins decide who can log in.
-        Gate::define('manage-users', fn (User $user) => $user->is_admin);
+        // Admins manage who can log in, the game settings, and deleting shared leaderboard data.
+        Gate::define('admin', fn (User $user) => $user->is_admin);
     }
 }

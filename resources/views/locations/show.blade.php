@@ -128,10 +128,12 @@
                     <td class="hide-sm small muted">{{ Str::limit($snapshot->notes, 60) }}</td>
                     <td class="right nowrap">
                         <a href="{{ route('snapshots.edit', $snapshot) }}">Edit</a>
+                        @can('admin')
                         <form class="inline" method="post" action="{{ route('snapshots.destroy', $snapshot) }}" onsubmit="return confirm('Delete the {{ $snapshot->recorded_on->format('j M Y') }} snapshot?')">
                             @csrf @method('DELETE')
                             <button class="link-btn" style="color:var(--down);margin-left:.5rem">Delete</button>
                         </form>
+                        @endcan
                     </td>
                 </tr>
             @endforeach

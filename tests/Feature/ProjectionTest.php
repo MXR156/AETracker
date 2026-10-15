@@ -110,7 +110,8 @@ class ProjectionTest extends TestCase
 
     public function test_takeover_months_with_leader_still_and_growing(): void
     {
-        $me = Player::create(['username' => 'SuperSparrow', 'is_me' => true]);
+        $me = Player::create(['username' => 'SuperSparrow']);
+        auth()->user()->update(['player_id' => $me->id]);
         $mayor = Player::create(['username' => 'Uacesk']);
         $chelmsford = Location::create(['name' => 'Chelmsford', 'type' => 'city']);
         foreach ([[now()->subDays(61)->toDateString(), 238, 302], [now()->subDay()->toDateString(), 238, 342]] as [$date, $mine, $theirs]) {
@@ -185,7 +186,7 @@ class ProjectionTest extends TestCase
 
     public function test_page_shows_and_saves_the_projection(): void
     {
-        Holding::create(['recorded_on' => now(), 'common' => 421]);
+        Holding::create(['user_id' => auth()->id(), 'recorded_on' => now(), 'common' => 421]);
 
         $this->get('/projection')->assertOk()->assertSee('Your AB income')->assertSee('1,330'); // free only by default
 

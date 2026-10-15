@@ -29,7 +29,11 @@ return [
         'login_explorer_base', 'login_explorer_bonus', 'ladder_free', 'ladder_premium',
         'explorer_club', 'explorer_cost_month', 'premium_ladder', 'premium_cost_month', 'ab_extra_month', 'ab_balance',
         'projection_months', 'rent_milestones', 'account_started_on', 'projection_basis', 'use_own_mix',
+        'boost_region_id', 'boost_hours_per_day',
     ],
+
+    // Settings that come from the account's country (boost regions), not the Settings form.
+    'region_settings' => ['boost_tiers', 'badge_tiers'],
 
     'defaults' => [
         'currency_symbol' => '$',
@@ -101,6 +105,7 @@ return [
         'account_started_on' => '',       // when you started playing - for "progress so far"
         'projection_basis' => 'rewards',  // 'rewards' = reward schedule, 'history' = my pace so far
         'use_own_mix' => '0',             // 1 = new parcels follow my current rarity mix, not the odds
+        'boost_region_id' => '',          // which country's boost/badge tiers I use (blank = the default)
         'projection_months' => '24',
         'rent_milestones' => '10, 20, 30, 50', // monthly rent targets to show
     ],

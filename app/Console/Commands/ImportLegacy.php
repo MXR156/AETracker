@@ -4,7 +4,10 @@ namespace App\Console\Commands;
 
 use App\Models\Location;
 use App\Models\Player;
+use App\Models\Setting;
 use App\Models\Snapshot;
+use App\Models\User;
+use App\Services\AccountAdoption;
 use App\Services\SnapshotWriter;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
@@ -18,7 +21,8 @@ class ImportLegacy extends Command
 {
     protected $signature = 'aetracker:import-legacy
         {path : Path to the old database.sqlite file}
-        {--me= : Username to mark as you, e.g. SuperSparrow}';
+        {--me= : Your username, e.g. SuperSparrow - linked as "me" for your account}
+        {--user= : Email of the account to link --me to (default: the first admin)}';
 
     protected $description = 'Import locations, players and snapshots from the original tracker\'s SQLite database';
 
@@ -84,9 +88,22 @@ class ImportLegacy extends Command
         });
 
         if ($me = $this->option('me')) {
-            Player::where('is_me', true)->update(['is_me' => false]);
-            Player::findOrCreateByName($me)->update(['is_me' => true]);
-            $this->info("Marked {$me} as you.");
+            $player = Player::findOrCreateByName($me);
+            $user = $this->option('user')
+                ? User::where('email', strtolower($this->option('user')))->first()
+                : User::where('is_admin', true)->orderBy('id')->first();
+            if ($this->option('user') && ! $user) {
+                $this->warn("No account with the email {$this->option('user')} - {$me} wasn't linked.");
+            } elseif ($user && User::where('player_id', $player->id)->whereKeyNot($user->id)->exists()) {
+                $this->warn("{$me} is already linked to another account.");
+            } elseif ($user) {
+                $user->update(['player_id' => $player->id]);
+                $this->info("Linked {$me} as “me” for {$user->email}.");
+            } else {
+                // No accounts yet: the first account created gets it.
+                Setting::put(AccountAdoption::LEGACY_ME, (string) $player->id);
+                $this->info("{$me} will be linked as “me” for the first account you create.");
+            }
         }
 
         $this->info("Imported {$stats['locations']} new locations, {$stats['snapshots']} new snapshots and {$stats['entries']} new entries.");

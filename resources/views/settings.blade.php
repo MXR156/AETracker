@@ -6,7 +6,7 @@
     <div><h1>Settings</h1><div class="muted">The game numbers used to estimate your earnings. Check them against Atlas Earth and update them when they change.</div></div>
 </div>
 
-<div class="notice">The starting values are estimates, not official figures. Check your rent rates, boost tiers and badge tiers in the game.</div>
+<div class="notice">Shared by everyone. The starting values are estimates, not official figures - check rent rates and each country's tiers in the game.</div>
 
 <form method="post" action="{{ route('settings.update') }}">
     @csrf @method('PUT')
@@ -29,15 +29,8 @@
 
         <div class="card">
             <h2>Ad boost</h2>
-            <div class="field">
-                <label for="boost_hours_per_day">Hours boosted per day (typical, 24 = always)</label>
-                <input type="number" step="0.5" min="0" max="24" id="boost_hours_per_day" name="boost_hours_per_day" value="{{ $v('boost_hours_per_day') }}">
-            </div>
-            <div class="field">
-                <label for="boost_tiers">Boost tiers</label>
-                <textarea id="boost_tiers" name="boost_tiers" rows="8">{{ $v('boost_tiers') }}</textarea>
-                <div class="hint">One tier per line as <code>from:multiplier</code> - e.g. <code>351:3</code> means 351 or more gives 3× boost.</div>
-            </div>
+            <p class="muted small" style="margin-top:0">Boost and badge tiers are set per country - see <a href="#countries">Countries</a> below.
+                Each person sets their own boosted hours a day on their account page.</p>
             <div class="field">
                 <label for="boost_tier_basis">Tiers are based on</label>
                 <select id="boost_tier_basis" name="boost_tier_basis">
@@ -55,14 +48,6 @@
                     <input type="number" step="any" min="0" id="super_boost_multiplier" name="super_boost_multiplier" value="{{ $v('super_boost_multiplier') }}"></div>
             </div>
             <div class="hint" style="margin-top:-.5rem">During a Super Boost everyone's ad boost jumps to this multiplier, whatever their normal tier (e.g. 32 days a year at 50×). Set days to 0 to ignore them.</div>
-
-            <h2 style="margin-top:1.25rem">Badge boost</h2>
-            <div class="field">
-                <label for="badge_tiers">Badge tiers</label>
-                <textarea id="badge_tiers" name="badge_tiers" rows="6">{{ $v('badge_tiers') }}</textarea>
-                <div class="hint">One tier per line as <code>badges:percent</code> - e.g. <code>1:5</code> means 1 or more badges gives +5% rent.
-                    Set how many badges you have on the <a href="{{ route('dashboard') }}#update">Dashboard</a>.</div>
-            </div>
         </div>
 
         <div class="card">
@@ -98,7 +83,55 @@
     </div>
 </form>
 
-<form method="post" action="{{ route('settings.update') }}" style="margin-top:1.5rem" onsubmit="return confirm('Reset every setting to the default?')">
+<div class="card" id="countries" style="margin-top:1.5rem">
+    <h2>Countries</h2>
+    <p class="muted small" style="margin-top:0">Atlas Earth's boost and badge tiers depend on the country. Each person picks theirs on their account page;
+        anyone who hasn't uses the default.</p>
+    <div class="grid grid-2">
+        @foreach ($regions as $region)
+            <form method="post" action="{{ route('regions.update', $region) }}" class="card" style="margin:0">
+                @csrf @method('PUT')
+                <div class="field"><label>Country</label>
+                    <input name="name" value="{{ $region->name }}" required>
+                    @if ($region->is_default)<div class="hint"><span class="chip">default</span></div>@endif</div>
+                <div class="form-row">
+                    <div class="field"><label>Boost tiers <span class="muted">(from:×)</span></label>
+                        <textarea name="boost_tiers" rows="11" required>{{ $region->boost_tiers }}</textarea></div>
+                    <div class="field"><label>Badge tiers <span class="muted">(badges:%)</span></label>
+                        <textarea name="badge_tiers" rows="11">{{ $region->badge_tiers }}</textarea></div>
+                </div>
+                <div class="actions">
+                    <button class="btn btn-sm">Save {{ $region->name }}</button>
+                    @unless ($region->is_default)
+                        <button class="btn btn-ghost btn-sm" form="default-{{ $region->id }}">Make default</button>
+                        <button class="btn btn-danger btn-sm" form="delete-{{ $region->id }}">Remove</button>
+                    @endunless
+                </div>
+            </form>
+        @endforeach
+    </div>
+    @foreach ($regions as $region)
+        <form method="post" action="{{ route('regions.default', $region) }}" id="default-{{ $region->id }}" hidden>@csrf</form>
+        <form method="post" action="{{ route('regions.destroy', $region) }}" id="delete-{{ $region->id }}" hidden onsubmit="return confirm('Remove {{ $region->name }}? Anyone using it goes back to the default.')">@csrf @method('DELETE')</form>
+    @endforeach
+    <p class="muted small">One tier per line: boost tiers as <code>from:multiplier</code> (e.g. <code>351:3</code> = 351 or more gives 3×),
+        badge tiers as <code>badges:percent</code> (e.g. <code>11:10</code> = 11 or more badges gives +10%).</p>
+
+    <details style="margin-top:.5rem" @if ($errors->has('name') || $errors->has('boost_tiers')) open @endif>
+        <summary>+ Add a country</summary>
+        <form method="post" action="{{ route('regions.store') }}" style="margin-top:.75rem;max-width:640px">
+            @csrf
+            <div class="field"><label for="new_region">Country</label><input id="new_region" name="name" value="{{ old('name') }}" placeholder="e.g. France" required></div>
+            <div class="form-row">
+                <div class="field"><label for="new_boost">Boost tiers</label><textarea id="new_boost" name="boost_tiers" rows="6" placeholder="1:20&#10;61:15" required>{{ old('boost_tiers') }}</textarea></div>
+                <div class="field"><label for="new_badge">Badge tiers</label><textarea id="new_badge" name="badge_tiers" rows="6" placeholder="1:5&#10;11:10">{{ old('badge_tiers') }}</textarea></div>
+            </div>
+            <button class="btn btn-sm">Add country</button>
+        </form>
+    </details>
+</div>
+
+<form method="post" action="{{ route('settings.update') }}" style="margin-top:1.5rem" onsubmit="return confirm('Reset the game settings above to the defaults? Countries are kept.')">
     @csrf @method('PUT')
     <input type="hidden" name="reset" value="1">
     <button class="btn btn-danger btn-sm">Reset to defaults</button>

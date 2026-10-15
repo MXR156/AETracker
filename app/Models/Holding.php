@@ -2,13 +2,20 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
 
 class Holding extends Model
 {
-    protected $fillable = ['recorded_on', 'common', 'rare', 'epic', 'legendary', 'notes'];
+    protected $fillable = ['user_id', 'recorded_on', 'common', 'rare', 'epic', 'legendary', 'notes'];
+
+    /** Parcel counts are private: only ever look at one account's. */
+    public function scopeFor(Builder $query, ?User $user = null): void
+    {
+        $query->where('user_id', ($user ?? auth()->user())?->id);
+    }
 
     /** Stored as a plain Y-m-d date so lookups by date behave the same on SQLite and MySQL. */
     protected function recordedOn(): Attribute
@@ -19,9 +26,10 @@ class Holding extends Model
         );
     }
 
-    public static function current(): ?self
+    /** An account's latest parcel counts (the logged-in account by default). */
+    public static function current(?User $user = null): ?self
     {
-        return static::orderByDesc('recorded_on')->orderByDesc('id')->first();
+        return static::for($user)->orderByDesc('recorded_on')->orderByDesc('id')->first();
     }
 
     public function total(): int

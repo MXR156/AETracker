@@ -9,7 +9,7 @@ A Laravel 13 app for tracking Atlas Earth parcels:
 - **Projection**: tick whether you're in the Explorer Club and/or on the Premium Rewards Ladder, say which day of the 90-day login streak you're on, and enter your subscription prices. The projection then goes day by day: each day's login reward (1 AB a day with bonuses on days 7, 14, 30, 60 and 90; Explorer Club 90 a day with bigger bonuses), one reward-ladder step a day from the 1st of each month (including the free ladder's badge and the premium ladder's legendary upgrade), and any other AB. Every 100 AB buys a parcel and rent is recalculated (boost tiers, badges and Super Boost days included). It shows when your monthly rent covers each subscription, when total rent has paid back the subscriptions, when rent reaches your targets (e.g. $10/$20/$30/$50 a month), and how many months until you could become Mayor where you're chasing. All the reward schedules can be edited on the page.
 
   Add when you started playing and it also shows **your progress so far**: AB put into parcels (100 each) and bought badges (200 each; the reward ladder's monthly badge is counted as free), your pace per 90 days and per month compared with your reward schedule, and your rarity mix. You can then project at **your pace so far** instead of the reward schedule, and have new parcels follow **your own rarity mix** instead of the odds in Settings.
-- **Settings**: rent per rarity, boost tiers (by parcel count or by rent), badge tiers, rarity odds and costs. The boost and UK badge tier defaults come from the game; the rent rates and odds are estimates, so check them against the game.
+- **Settings** (admins): rent per rarity, boost tiers per country (by parcel count or by rent), badge tiers, rarity odds and costs. The boost and UK badge tier defaults come from the game; the rent rates and odds are estimates, so check them against the game.
 
 ## Setup
 
@@ -80,13 +80,21 @@ The tracker waits for the database to be ready and creates the tables when it st
 
 **Without Docker**, set the same `DB_*` values in `.env` and run `php artisan migrate`.
 
-### Logins
+### Logins, and what's shared
 
 Every page needs a login; there's no sign-up page, so only people you add can get in.
 
-- Create the first account (an admin) with `php artisan aetracker:user you@example.com --name=YourName` (prefix with `docker compose exec aetracker` for Docker). Running it again for an existing email resets that password.
-- Admins add and remove people, reset passwords and make others admins on the **Users** page. Members can use everything except that page.
-- Everyone can change their name, email and password by clicking their name at the top.
+**Shared by everyone** (it's what any AE player can see in the game): locations, snapshots, players, leaderboards and the bookmarklet import. Everyone can add and edit them; **only admins can delete** a location, snapshot or player.
+
+**Private to each account** - nobody else, admins included, can see them:
+- your **“me”** player (pick it with *This is me* on your player page; each player can belong to one account only - if it's taken, ask an admin to unlink it),
+- your parcel counts and history, badge count, Planner and Projection settings, and your progress so far,
+- your **country** (which boost and badge tiers apply to you) and **hours boosted per day**, on your account page.
+
+**Admins** also manage the **Users** page (it shows logins, never anyone's stats or player) and **Settings**: the game numbers shared by everyone (rent rates, odds, costs, Super Boost) and the **Countries** list - each country's boost and badge tiers, one of them the default for accounts that haven't picked.
+
+- Create the first account (an admin) with `php artisan aetracker:user you@example.com --name=YourName` (prefix with `docker compose exec aetracker` for Docker). Running it again for an existing email resets that password. If the tracker had data from before logins were added (parcels, badges, projection, “me”), the first account takes it over.
+- Everyone can change their name, email and password from their account page (click your name at the top).
 - Five wrong passwords in a row pause logins for that email for a minute.
 - The bookmarklet still works: the leaderboard is held until you review it, and the review page asks you to log in first if you aren't.
 

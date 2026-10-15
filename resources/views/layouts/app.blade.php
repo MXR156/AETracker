@@ -21,10 +21,10 @@
                 <a href="{{ route('players.index') }}" @class(['active' => request()->routeIs('players.*')])>Players</a>
                 <a href="{{ route('portfolio.planner') }}" @class(['active' => request()->routeIs('portfolio.planner')])>Planner</a>
                 <a href="{{ route('projection.index') }}" @class(['active' => request()->routeIs('projection.*')])>Projection</a>
-                <a href="{{ route('settings.edit') }}" @class(['active' => request()->routeIs('settings.*')])>Settings</a>
+                @can('admin')<a href="{{ route('settings.edit') }}" @class(['active' => request()->routeIs('settings.*')])>Settings</a>@endcan
             </nav>
             <div class="user-menu">
-                @can('manage-users')<a href="{{ route('users.index') }}" @class(['active' => request()->routeIs('users.*')])>Users</a>@endcan
+                @can('admin')<a href="{{ route('users.index') }}" @class(['active' => request()->routeIs('users.*')])>Users</a>@endcan
                 <a href="{{ route('account.edit') }}" @class(['active' => request()->routeIs('account.*')]) title="My account">{{ auth()->user()->name }}</a>
                 <form method="post" action="{{ route('logout') }}" class="inline">@csrf<button class="link-btn">Log out</button></form>
             </div>

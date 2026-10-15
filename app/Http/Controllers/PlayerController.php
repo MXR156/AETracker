@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Location;
 use App\Models\Player;
+use App\Models\User;
 use App\Services\Leaderboard;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -97,10 +98,22 @@ class PlayerController extends Controller
         if ($player->isGhost()) {
             return back()->withErrors(['player' => 'An anonymous player can\'t be you.']);
         }
-        Player::where('is_me', true)->update(['is_me' => false]);
-        $player->update(['is_me' => true]);
+        // One account per player. Don't say which account has it - accounts are private.
+        if (User::where('player_id', $player->id)->whereKeyNot(auth()->id())->exists()) {
+            return back()->withErrors(['player' => 'This player is already linked to another account. If it\'s you, ask an admin to unlink it.']);
+        }
+        auth()->user()->update(['player_id' => $player->id]);
 
         return back()->with('status', "{$player->username} is now marked as you.");
+    }
+
+    public function unmarkMe(Player $player)
+    {
+        if (auth()->user()->player_id === $player->id) {
+            auth()->user()->update(['player_id' => null]);
+        }
+
+        return back()->with('status', "{$player->username} is no longer marked as you.");
     }
 
     public function destroy(Player $player)

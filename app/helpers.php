@@ -79,3 +79,13 @@ if (! function_exists('ae_num')) {
         return str_contains($formatted, '.') ? rtrim(rtrim($formatted, '0'), '.') : $formatted;
     }
 }
+
+if (! function_exists('ae_settings_link')) {
+    /** A link to the (admin-only) Settings page - or plain text for everyone else. */
+    function ae_settings_link(string $text = 'Settings'): string
+    {
+        return auth()->user()?->can('admin')
+            ? '<a href="'.e(route('settings.edit')).'">'.e($text).'</a>'
+            : e($text).' (set by an admin)';
+    }
+}

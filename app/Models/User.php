@@ -2,11 +2,18 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 
 class User extends Authenticatable
 {
-    protected $fillable = ['name', 'email', 'password', 'is_admin', 'last_login_at'];
+    protected $fillable = ['name', 'email', 'password', 'is_admin', 'player_id', 'last_login_at'];
+
+    /** The AE player this account is ("me"). Private to the account. */
+    public function player(): BelongsTo
+    {
+        return $this->belongsTo(Player::class);
+    }
 
     protected $hidden = ['password', 'remember_token'];
 

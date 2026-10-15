@@ -7,7 +7,7 @@
 
 <div class="card table-wrap">
     <table>
-        <thead><tr><th>Name</th><th>Email</th><th>Role</th><th class="hide-sm">Last login</th><th>Reset password</th><th></th></tr></thead>
+        <thead><tr><th>Name</th><th>Email</th><th>Role</th><th class="hide-sm">Last login</th><th class="hide-sm">“Me” player</th><th>Reset password</th><th></th></tr></thead>
         <tbody>
         @foreach ($users as $u)
             <tr @class(['me' => $u->is(auth()->user())])>
@@ -22,6 +22,14 @@
                     </form>
                 </td>
                 <td class="hide-sm small muted">{{ $u->last_login_at?->diffForHumans() ?? 'never' }}</td>
+                <td class="hide-sm small">
+                    @if ($u->player_id)
+                        <span class="muted">linked</span>
+                        <form method="post" action="{{ route('users.unlink', $u) }}" class="inline" onsubmit="return confirm('Unlink the player {{ $u->name }} picked as “me”? They can pick again.')">
+                            @csrf @method('DELETE')<button class="link-btn small">Unlink</button>
+                        </form>
+                    @else<span class="muted">none</span>@endif
+                </td>
                 <td>
                     <form method="post" action="{{ route('users.update', $u) }}" class="actions" style="flex-wrap:nowrap">
                         @csrf @method('PUT')
@@ -40,7 +48,8 @@
         @endforeach
         </tbody>
     </table>
-    <p class="muted small" style="margin-bottom:0">Members can use everything except this page. Admins can also add and remove people.</p>
+    <p class="muted small" style="margin-bottom:0">Everyone can view and add to the shared leaderboards, and has their own private parcels, badges, projection and “me” player - nobody else (admins included) can see them.
+        Admins can also manage users, change the game settings and delete locations, snapshots and players.</p>
 </div>
 
 <div class="card" style="max-width:640px">

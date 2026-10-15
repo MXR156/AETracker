@@ -54,7 +54,7 @@
         </tbody>
     </table>
     @if ($calc->badgeCost() <= 0)
-        <p class="muted small" style="margin-bottom:0">To compare badges with parcels, set what one badge costs you in <a href="{{ route('settings.edit') }}">Settings</a>.</p>
+        <p class="muted small" style="margin-bottom:0">To compare badges with parcels, a badge's cost is set in {!! ae_settings_link() !!}.</p>
     @endif
 </div>
 
@@ -80,7 +80,7 @@
     <div class="chart-box"><canvas id="curve-base"></canvas></div>
 </div>
 
-<div class="notice">These are estimates. Rent rates, boost tiers and badge tiers change in Atlas Earth from time to time - keep them up to date on the <a href="{{ route('settings.edit') }}">Settings</a> page.</div>
+<div class="notice">These are estimates. Rent rates, boost tiers and badge tiers change in Atlas Earth from time to time - they're kept up to date in {!! ae_settings_link() !!}.</div>
 @endsection
 
 @push('scripts')

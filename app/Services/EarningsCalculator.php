@@ -94,7 +94,7 @@ class EarningsCalculator
      */
     public function calculate(array $counts, int $badgeCount, ?float $boostHours = null): array
     {
-        $boostHours = max(0, min(24, $boostHours ?? (float) $this->settings['boost_hours_per_day']));
+        $boostHours = (float) max(0, min(24, $boostHours ?? (float) $this->settings['boost_hours_per_day']));
 
         $base = 0.0;
         foreach (self::RARITIES as $rarity) {

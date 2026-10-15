@@ -15,9 +15,11 @@
             {{ $rows->where('is_leader', true)->count() }} × leader</div>
         @if ($player->notes)<div class="small" style="margin-top:.35rem">{{ $player->notes }}</div>@endif
     </div>
-    @unless ($player->is_me || $player->isGhost())
+    @if ($player->is_me)
+        <form method="post" action="{{ route('players.unme', $player) }}">@csrf @method('DELETE')<button class="btn btn-ghost">This isn't me</button></form>
+    @elseif (! $player->isGhost() && ! $player->isClaimed())
         <form method="post" action="{{ route('players.me', $player) }}">@csrf<button class="btn btn-ghost">This is me</button></form>
-    @endunless
+    @endif
 </div>
 
 <div class="card table-wrap">
@@ -65,6 +67,7 @@
             <button class="btn btn-sm">Save</button>
         </form>
     </div>
+    @can('admin')
     <div class="card">
         <h3>Delete player</h3>
         <p class="muted small">Removes {{ $player->username }} from every snapshot. Use this to clean up typos.</p>
@@ -73,5 +76,6 @@
             <button class="btn btn-danger btn-sm">Delete</button>
         </form>
     </div>
+    @endcan
 </div>
 @endsection

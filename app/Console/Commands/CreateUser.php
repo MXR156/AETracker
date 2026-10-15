@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Models\User;
+use App\Services\AccountAdoption;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rules\Password;
@@ -41,8 +42,15 @@ class CreateUser extends Command
             $user->name = $this->option('name');
         }
         $user->password = $password;
-        $user->is_admin = $user->is_admin || $this->option('admin') || User::count() === 0; // the first account is always an admin
+        $first = User::count() === 0;
+        $user->is_admin = $user->is_admin || $this->option('admin') || $first; // the first account is always an admin
         $user->save();
+
+        // The first account takes over the parcels, badges, projection and "me" player from before accounts.
+        if ($first && AccountAdoption::hasOrphans()) {
+            AccountAdoption::adopt($user->id);
+            $this->line('Your existing parcels, badges, projection settings and “me” player are now in this account.');
+        }
 
         $this->info(($user->wasRecentlyCreated ? 'Created' : 'Updated')." {$user->email}".($user->is_admin ? ' (admin)' : '').'.');
 

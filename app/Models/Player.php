@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -12,11 +13,11 @@ class Player extends Model
     /** Names Atlas Earth shows for deleted or unnamed accounts, optionally numbered: "Anonymous", "Anon #2". */
     public const GHOST_PATTERN = '/^anon(?:ymous)?(?:\s*#?\s*(\d+))?$/i';
 
-    protected $fillable = ['username', 'location_id', 'is_me', 'notes'];
+    protected $fillable = ['username', 'location_id', 'notes'];
 
     protected function casts(): array
     {
-        return ['is_me' => 'boolean'];
+        return [];
     }
 
     public function entries(): HasMany
@@ -60,9 +61,22 @@ class Player extends Model
         ]);
     }
 
+    /** The logged-in account's own player ("me"), if they've picked one. */
     public static function me(): ?self
     {
-        return static::where('is_me', true)->first();
+        return auth()->user()?->player;
+    }
+
+    /** Is this the logged-in account's player? */
+    protected function isMe(): Attribute
+    {
+        return Attribute::get(fn () => auth()->check() && auth()->user()->player_id === $this->id);
+    }
+
+    /** Has some account claimed this player as theirs? (Not who - accounts are private.) */
+    public function isClaimed(): bool
+    {
+        return User::where('player_id', $this->id)->exists();
     }
 
     /** Find a (non-ghost) player by username (case-insensitive) or create them. */

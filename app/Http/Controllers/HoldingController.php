@@ -20,13 +20,14 @@ class HoldingController extends Controller
             'legendary' => ['required', 'integer', 'min:0'],
         ]);
 
-        Holding::updateOrCreate(['recorded_on' => now()->toDateString()], $data);
+        Holding::updateOrCreate(['user_id' => $request->user()->id, 'recorded_on' => now()->toDateString()], $data);
 
         return redirect()->to(route('dashboard').'#update')->with('status', 'Parcel counts saved.');
     }
 
-    public function destroy(Holding $holding)
+    public function destroy(Request $request, Holding $holding)
     {
+        abort_unless($holding->user_id === $request->user()->id, 404); // only your own
         $holding->delete();
 
         return redirect()->to(route('dashboard').'#update')->with('status', 'Entry deleted.');

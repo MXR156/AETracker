@@ -37,7 +37,7 @@
     </form>
 </div>
 
-@if ($location->exists)
+@if ($location->exists && auth()->user()->can('admin'))
     <div class="card" style="max-width:640px">
         <h3>Delete location</h3>
         <p class="muted small">This also deletes all of its snapshots. Players stay.</p>
