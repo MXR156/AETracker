@@ -25,7 +25,7 @@ class SettingsController extends Controller
             return redirect()->route('settings.edit')->with('status', 'Settings reset to the defaults.');
         }
 
-        $rules = ['currency_symbol' => ['required', 'string', 'max:5'], 'boost_tier_basis' => ['required', 'in:parcels,rent']];
+        $rules = ['currency_symbol' => ['required', 'string', 'max:5'], 'boost_tier_basis' => ['required', 'in:parcels,rent'], 'allow_registration' => ['nullable']];
         // Some settings are changed on their own pages (badges on the dashboard, AB income on Projection).
         // ...and boost/badge tiers are kept per country (below).
         foreach (array_diff(array_keys(config('aetracker.defaults')), config('aetracker.page_settings'), config('aetracker.region_settings')) as $key) {
@@ -33,6 +33,7 @@ class SettingsController extends Controller
         }
         $rules['super_boost_days_per_year'][] = 'max:365';
         $data = $request->validate($rules);
+        $data['allow_registration'] = $request->boolean('allow_registration') ? '1' : '0';
 
         foreach ($data as $key => $value) {
             Setting::put($key, (string) $value);

@@ -29,6 +29,19 @@
                 <form method="post" action="{{ route('logout') }}" class="inline">@csrf<button class="link-btn">Log out</button></form>
             </div>
         @endauth
+        @guest
+            <nav>
+                <a href="{{ route('dashboard') }}" @class(['active' => request()->routeIs('dashboard')])>Home</a>
+                <a href="{{ route('locations.index') }}" @class(['active' => request()->routeIs('locations.*')])>Locations</a>
+                <a href="{{ route('players.index') }}" @class(['active' => request()->routeIs('players.*')])>Players</a>
+            </nav>
+            <div class="user-menu">
+                <a href="{{ route('login') }}" @class(['active' => request()->routeIs('login')])>Log in</a>
+                @if (\App\Http\Controllers\AuthController::registrationOpen())
+                    <a href="{{ route('register') }}" class="btn btn-sm" style="color:#fff">Create account</a>
+                @endif
+            </div>
+        @endguest
     </div>
 </header>
 <main>

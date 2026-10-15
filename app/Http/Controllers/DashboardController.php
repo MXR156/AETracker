@@ -17,6 +17,10 @@ class DashboardController extends Controller
 {
     public function __invoke()
     {
+        if (! auth()->check()) {
+            return $this->home();
+        }
+
         // Locations
         $me = Player::me();
         $boards = Location::orderBy('name')->get()->map(fn ($l) => new Leaderboard($l));
@@ -54,6 +58,39 @@ class DashboardController extends Controller
             'badgeTiers' => $calc->badgeTiers(),
             'earnings' => $calc->current($current),
             'history' => $history,
+        ]);
+    }
+
+    /** The public home page: a login box and the shared, non-personal statistics. */
+    private function home()
+    {
+        $boards = Location::orderBy('name')->get()->map(fn ($l) => new Leaderboard($l))->filter(fn ($b) => $b->latest)->values();
+        $rows = $boards->flatMap(fn ($b) => $b->rows->map(fn ($r) => (object) ['board' => $b, 'row' => $r]));
+
+        // Biggest landowners across the tracked locations (named players only).
+        $landowners = $rows->reject(fn ($x) => $x->row->player->isGhost())
+            ->groupBy(fn ($x) => $x->row->player->id)
+            ->map(fn ($items) => (object) [
+                'player' => $items->first()->row->player,
+                'parcels' => $items->sum(fn ($x) => $x->row->parcels),
+                'locations' => $items->count(),
+                'leads' => $items->where('row.rank', 1)->count(),
+            ])
+            ->sortByDesc('parcels')->take(10)->values();
+
+        return view('home', [
+            'boards' => $boards,
+            'stats' => [
+                'locations' => $boards->count(),
+                'players' => Player::real()->count(),
+                'snapshots' => Snapshot::count(),
+                'parcels' => $rows->sum(fn ($x) => $x->row->parcels),
+            ],
+            'mayors' => $boards->filter(fn ($b) => $b->leader())->sortByDesc(fn ($b) => $b->leader()->parcels)->take(12)->values(),
+            'landowners' => $landowners,
+            'gains' => $rows->filter(fn ($x) => $x->row->change > 0)->sortByDesc(fn ($x) => $x->row->change)->take(8)->values(),
+            'recent' => Snapshot::with('location')->orderByDesc('recorded_on')->orderByDesc('id')->take(8)->get(),
+            'canRegister' => AuthController::registrationOpen(),
         ]);
     }
 }

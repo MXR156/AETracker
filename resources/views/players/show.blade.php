@@ -15,11 +15,13 @@
             {{ $rows->where('is_leader', true)->count() }} × leader</div>
         @if ($player->notes)<div class="small" style="margin-top:.35rem">{{ $player->notes }}</div>@endif
     </div>
+    @auth
     @if ($player->is_me)
         <form method="post" action="{{ route('players.unme', $player) }}">@csrf @method('DELETE')<button class="btn btn-ghost">This isn't me</button></form>
     @elseif (! $player->isGhost() && ! $player->isClaimed())
         <form method="post" action="{{ route('players.me', $player) }}">@csrf<button class="btn btn-ghost">This is me</button></form>
     @endif
+    @endauth
 </div>
 
 <div class="card table-wrap">
@@ -57,6 +59,7 @@
     @endif
 </div>
 
+@auth
 <div class="grid grid-2">
     <div class="card">
         <h3>Edit player</h3>
@@ -78,4 +81,5 @@
     </div>
     @endcan
 </div>
+@endauth
 @endsection

@@ -78,6 +78,13 @@
         </div>
     </div>
 
+    <div class="card" style="margin-top:1.25rem">
+        <h2>Accounts</h2>
+        <label style="font-weight:400"><input type="checkbox" name="allow_registration" value="1" @checked($v('allow_registration') === '1')>
+            Anyone can create an account from the home page</label>
+        <div class="hint">Untick to make it invite-only: admins add people on the Users page. Everyone can still view the leaderboards without an account.</div>
+    </div>
+
     <div class="actions" style="margin-top:1rem">
         <button class="btn">Save settings</button>
     </div>

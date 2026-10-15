@@ -13,9 +13,13 @@
         @if ($location->notes)<div class="small" style="margin-top:.35rem">{{ $location->notes }}</div>@endif
     </div>
     <div class="actions">
-        <a href="{{ route('locations.snapshots.create', $location) }}" class="btn">+ Add snapshot</a>
-        <a href="{{ route('import.index') }}" class="btn btn-ghost">Import from Atlas Earth</a>
-        <a href="{{ route('locations.edit', $location) }}" class="btn btn-ghost">Edit</a>
+        @auth
+            <a href="{{ route('locations.snapshots.create', $location) }}" class="btn">+ Add snapshot</a>
+            <a href="{{ route('import.index') }}" class="btn btn-ghost">Import from Atlas Earth</a>
+            <a href="{{ route('locations.edit', $location) }}" class="btn btn-ghost">Edit</a>
+        @else
+            <a href="{{ route('login') }}" class="btn btn-ghost">Log in to compare yourself</a>
+        @endauth
     </div>
 </div>
 
@@ -48,7 +52,7 @@
 @endif
 
 @if (! $board->latest)
-    <div class="card empty">No snapshots yet. <a href="{{ route('locations.snapshots.create', $location) }}">Add the first one</a>.</div>
+    <div class="card empty">No snapshots yet.@auth <a href="{{ route('locations.snapshots.create', $location) }}">Add the first one</a>.@endauth</div>
 @else
     <div class="stats">
         <div class="stat"><div class="label">Players</div><div class="value">{{ $board->rows->count() }}</div></div>
@@ -127,7 +131,7 @@
                     <td>{{ $top?->player->username }} <span class="muted small">{{ $top?->parcels }}</span></td>
                     <td class="hide-sm small muted">{{ Str::limit($snapshot->notes, 60) }}</td>
                     <td class="right nowrap">
-                        <a href="{{ route('snapshots.edit', $snapshot) }}">Edit</a>
+                        @auth<a href="{{ route('snapshots.edit', $snapshot) }}">Edit</a>@endauth
                         @can('admin')
                         <form class="inline" method="post" action="{{ route('snapshots.destroy', $snapshot) }}" onsubmit="return confirm('Delete the {{ $snapshot->recorded_on->format('j M Y') }} snapshot?')">
                             @csrf @method('DELETE')

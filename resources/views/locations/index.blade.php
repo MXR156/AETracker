@@ -3,7 +3,7 @@
 @section('content')
 <div class="page-head">
     <div><h1>Locations</h1><div class="muted">Who runs each place, from the latest snapshot.</div></div>
-    <a href="{{ route('locations.create') }}" class="btn">+ Add location</a>
+    @auth<a href="{{ route('locations.create') }}" class="btn">+ Add location</a>@endauth
 </div>
 
 <form class="filters" method="get">

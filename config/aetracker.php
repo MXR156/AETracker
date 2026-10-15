@@ -38,6 +38,9 @@ return [
     'defaults' => [
         'currency_symbol' => '$',
 
+        // 1 = anyone can create an account from the home page; 0 = only admins add people.
+        'allow_registration' => '1',
+
         // Base rent per parcel, per second (in-game dollars), before any boosts.
         'rent_common' => '0.00000000111',
         'rent_rare' => '0.0000000016',

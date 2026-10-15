@@ -82,9 +82,11 @@ The tracker waits for the database to be ready and creates the tables when it st
 
 ### Logins, and what's shared
 
-Every page needs a login; there's no sign-up page, so only people you add can get in.
+**Anyone can look** without an account: the home page (a login box, plus mayors, the biggest landowners, biggest recent gains and recently updated places), every location's leaderboard and growth chart, and the players' pages.
 
-**Shared by everyone** (it's what any AE player can see in the game): locations, snapshots, players, leaderboards and the bookmarklet import. Everyone can add and edit them; **only admins can delete** a location, snapshot or player.
+**With an account** - people can create one from the home page, or an admin can switch that off in Settings and add people on the Users page - you also get your own Dashboard, Planner and Projection, and can add to the leaderboards. Sign-up only opens once an admin account exists (made with the command below), so a stranger can't register first on a new install.
+
+**Shared by everyone** (it's what any AE player can see in the game): locations, snapshots, players, leaderboards and the bookmarklet import. Visitors can view them; logged-in accounts can add and edit them; **only admins can delete** a location, snapshot or player.
 
 **Private to each account** - nobody else, admins included, can see them:
 - your **“me”** player (pick it with *This is me* on your player page; each player can belong to one account only - if it's taken, ask an admin to unlink it),

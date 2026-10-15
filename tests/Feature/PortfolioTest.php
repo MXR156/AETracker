@@ -118,7 +118,7 @@ class PortfolioTest extends TestCase
         $this->get('/')->assertOk()->assertSee('Update my parcels')->assertSee('How many badges do you have?')
             ->assertSee('in charge')->assertSee('Parcel history')->assertDontSee('Bought or lost')
             ->assertDontSee('name="recorded_on"', false)->assertDontSee('name="notes"', false);
-        $this->post('/my-parcels/holdings/add', ['rarity' => 'common', 'quantity' => 3])->assertStatus(405); // quick add/remove is gone
+        $this->post('/my-parcels/holdings/add', ['rarity' => 'common', 'quantity' => 3])->assertNotFound(); // quick add/remove is gone
     }
 
     public function test_settings_save_and_reset(): void

@@ -17,5 +17,8 @@
         <div class="field"><label style="font-weight:400"><input type="checkbox" name="remember" value="1" @checked(old('remember'))> Keep me logged in on this device</label></div>
         <button class="btn" style="width:100%">Log in</button>
     </form>
+    @if ($canRegister)
+        <p class="small" style="margin-bottom:0;text-align:center">New here? <a href="{{ route('register') }}">Create an account</a></p>
+    @endif
 </div>
 @endsection

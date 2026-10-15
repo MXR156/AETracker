@@ -19,15 +19,15 @@ class AuthTest extends TestCase
         return User::create(array_merge(['name' => 'Mike', 'email' => 'mike@example.com', 'password' => 'correct-horse', 'is_admin' => false], $attrs));
     }
 
-    public function test_everything_needs_a_login_except_the_health_check(): void
+    public function test_personal_and_editing_pages_need_a_login(): void
     {
-        foreach (['/', '/locations', '/players', '/import', '/my-parcels/planner', '/projection', '/settings', '/account', '/users'] as $url) {
+        foreach (['/import', '/my-parcels/planner', '/projection', '/settings', '/account', '/users', '/locations/create'] as $url) {
             $this->get($url)->assertRedirect('/login');
         }
         $this->post('/locations', ['name' => 'Sneaky', 'type' => 'village'])->assertRedirect('/login');
         $this->assertSame(0, Location::count());
         $this->get('/up')->assertOk();
-        $this->get('/login')->assertOk()->assertSee('There are no accounts yet');
+        $this->get('/login')->assertOk()->assertSee('There are no accounts yet')->assertDontSee('Create an account');
     }
 
     public function test_logging_in_and_out(): void

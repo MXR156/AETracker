@@ -34,6 +34,9 @@ header.top .user-menu { margin-left: auto; display: flex; gap: .9rem; align-item
 header.top .user-menu a { color: var(--muted); }
 header.top .user-menu a.active { color: var(--accent); }
 header.top .user-menu .link-btn { color: var(--muted); }
+.home-hero { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 2rem; align-items: start; margin-top: .5rem; }
+@media (max-width: 860px) { .home-hero { grid-template-columns: 1fr; } }
+.list-row { display: flex; justify-content: space-between; gap: .5rem; padding: .35rem 0; border-bottom: 1px solid var(--border); }
 .auth-box { max-width: 380px; margin: 3rem auto; }
 header.top nav a.active, header.top nav a:hover { background: var(--accent-soft); color: var(--accent); text-decoration: none; }
 
