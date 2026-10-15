@@ -24,6 +24,35 @@ php artisan serve
 
 No Node build step is needed: CSS and Chart.js are served from `public/`.
 
+### Running on a Raspberry Pi with Docker
+
+Every push to GitHub runs the tests and then builds a Docker image for 64-bit and 32-bit Raspberry Pi OS (and normal PCs). It's published as `ghcr.io/mxr156/aetracker` (`latest` is the default branch). On the Pi, in this repo's folder:
+
+```bash
+docker compose pull
+docker compose up -d
+```
+
+Then open `http://<your-pi>:8080`. Your database and app key are kept in `./data`; back that folder up.
+
+**To update** after new changes are pushed and the GitHub build finishes: `docker compose pull && docker compose up -d`. Database changes are applied automatically when the container starts.
+
+**If the pull says "denied" or "unauthorized"**, the package is private (packages from private repos are). Either make it public (GitHub → your profile → Packages → aetracker → Package settings → Change visibility), or log the Pi in once with a [personal access token](https://github.com/settings/tokens) that has the `read:packages` scope:
+
+```bash
+echo YOUR_TOKEN | docker login ghcr.io -u mxr156 --password-stdin
+```
+
+**Settings** are in `docker-compose.yml`: the port (`8080:80`), `APP_URL` and `APP_TIMEZONE` (`Europe/London`, so "today" for the login streak is right).
+
+**Importing the old database**: copy it into `./data`, then:
+
+```bash
+docker compose exec aetracker php artisan aetracker:import-legacy /data/old-database.sqlite --me=SuperSparrow
+```
+
+**The Atlas Earth bookmarklet** sends the leaderboard from the `https` Atlas Earth site to the tracker. If the tracker is plain `http` (as above), your browser may warn that the form isn't secure; choose to send it anyway. That warning doesn't appear if you put the tracker behind HTTPS (e.g. a reverse proxy).
+
 ### Using MySQL
 
 Set these in `.env` and run `php artisan migrate`:

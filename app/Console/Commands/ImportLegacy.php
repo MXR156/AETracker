@@ -31,7 +31,12 @@ class ImportLegacy extends Command
             return self::FAILURE;
         }
 
-        $old = new PDO('sqlite:'.$path, options: [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC]);
+        // Read-only: the old database is never changed (and may not be writable, e.g. copied into a Docker volume).
+        $old = new PDO('sqlite:'.$path, options: [
+            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+            PDO::SQLITE_ATTR_OPEN_FLAGS => PDO::SQLITE_OPEN_READONLY,
+        ]);
 
         $rows = $old->query('
             SELECT l.name, l.type, p.username, date(s.recorded_on) AS recorded_on, s.parcel_count

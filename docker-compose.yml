@@ -1,0 +1,18 @@
+# Run AE Tracker on a Raspberry Pi (or any Docker host) from the image on GitHub Container Registry.
+#
+#   docker compose pull && docker compose up -d
+#
+# Your database lives in ./data next to this file - back that folder up.
+services:
+  aetracker:
+    image: ghcr.io/mxr156/aetracker:latest
+    container_name: aetracker
+    restart: unless-stopped
+    ports:
+      - "8080:80"          # open http://<your-pi>:8080
+    volumes:
+      - ./data:/data       # SQLite database and app key
+    environment:
+      APP_URL: "http://raspberrypi.local:8080"
+      APP_TIMEZONE: "Europe/London"
+      # APP_KEY: ""        # optional - one is generated and kept in ./data/app_key if not set
