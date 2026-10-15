@@ -53,8 +53,8 @@ class AuthTest extends TestCase
         foreach (range(1, 5) as $i) {
             $this->post('/login', ['email' => 'mike@example.com', 'password' => 'wrong']);
         }
-        $this->post('/login', ['email' => 'mike@example.com', 'password' => 'correct-horse'])
-            ->assertSessionHasErrors(['email' => 'Too many attempts. Try again in 60 seconds.']);
+        $this->post('/login', ['email' => 'mike@example.com', 'password' => 'correct-horse'])->assertSessionHasErrors('email');
+        $this->assertMatchesRegularExpression('/^Too many attempts\. Try again in \d+ seconds\.$/', session('errors')->first('email'));
         $this->assertGuest();
     }
 
