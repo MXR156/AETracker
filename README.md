@@ -53,18 +53,40 @@ docker compose exec aetracker php artisan aetracker:import-legacy /data/old-data
 
 **The Atlas Earth bookmarklet** sends the leaderboard from the `https` Atlas Earth site to the tracker. If the tracker is plain `http` (as above), your browser may warn that the form isn't secure; choose to send it anyway. That warning doesn't appear if you put the tracker behind HTTPS (e.g. a reverse proxy).
 
-### Using MySQL
+### Using MySQL / MariaDB instead of SQLite
 
-Set these in `.env` and run `php artisan migrate`:
+**With Docker**, either:
 
+- use your existing MySQL/MariaDB server: add these to `environment:` in `docker-compose.yml` (create the database and user first). `DB_HOST` can't be `localhost` - inside the container that's the container itself - so use the server's IP, or `host.docker.internal` plus `extra_hosts: ["host.docker.internal:host-gateway"]` if it runs on the Pi itself:
+
+  ```yaml
+      DB_CONNECTION: mariadb      # or mysql
+      DB_HOST: 192.168.1.50
+      DB_PORT: "3306"
+      DB_DATABASE: aetracker
+      DB_USERNAME: aetracker
+      DB_PASSWORD: your-password
+  ```
+
+- or run the tracker with its own MariaDB using `docker-compose.mariadb.yml` (change its passwords first; needs a 64-bit OS on the Pi): `docker compose -f docker-compose.mariadb.yml up -d`.
+
+The tracker waits for the database to be ready and creates the tables when it starts.
+
+**Without Docker**, set the same `DB_*` values in `.env` and run `php artisan migrate`.
+
+### Converting your SQLite data to MySQL / MariaDB
+
+Once the tracker is pointed at MySQL/MariaDB (above), copy everything from your SQLite file into it - locations, players (including anonymous ones), snapshots, your parcel counts and all settings, keeping the same IDs. Your SQLite file isn't changed, and an older one is brought up to date on the way.
+
+```bash
+# Docker: put the SQLite file in ./data first (e.g. data/database.sqlite from the SQLite setup)
+docker compose exec aetracker php artisan aetracker:copy-database /data/database.sqlite
+
+# Without Docker
+php artisan aetracker:copy-database /path/to/database.sqlite
 ```
-DB_CONNECTION=mysql
-DB_HOST=127.0.0.1
-DB_PORT=3306
-DB_DATABASE=aetracker
-DB_USERNAME=...
-DB_PASSWORD=...
-```
+
+It won't copy over existing tracker data unless you add `--replace`, which empties the tracker's tables in MySQL first.
 
 ### Importing the old tracker's database
 

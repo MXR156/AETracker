@@ -14,6 +14,24 @@ if [ "${DB_CONNECTION:-sqlite}" = "sqlite" ]; then
     fi
 fi
 
+# MySQL/MariaDB/PostgreSQL: wait for the database to accept connections (it may still be starting).
+if [ "${DB_CONNECTION:-sqlite}" != "sqlite" ]; then
+    echo "Waiting for the ${DB_CONNECTION} database at ${DB_HOST:-127.0.0.1}..."
+    tries=0
+    until php -r '
+        $driver = getenv("DB_CONNECTION") === "pgsql" ? "pgsql" : "mysql";
+        $port = getenv("DB_PORT") ?: ($driver === "pgsql" ? 5432 : 3306);
+        new PDO("$driver:host=".(getenv("DB_HOST") ?: "127.0.0.1").";port=$port", getenv("DB_USERNAME") ?: "root", getenv("DB_PASSWORD") ?: "");
+    ' 2>/dev/null; do
+        tries=$((tries + 1))
+        if [ "$tries" -ge 60 ]; then
+            echo "Couldn't connect to the database after 2 minutes - check the DB_* settings." >&2
+            exit 1
+        fi
+        sleep 2
+    done
+fi
+
 # App key (encrypts sessions/cookies): use APP_KEY if given, otherwise create one once and keep it in /data.
 if [ -z "$APP_KEY" ]; then
     if [ ! -s /data/app_key ]; then
