@@ -63,6 +63,7 @@ class CopyDatabaseTest extends TestCase
         $this->artisan('aetracker:copy-database', ['path' => $path])->assertFailed();
         $this->artisan('aetracker:copy-database', ['path' => $path, '--replace' => true])->assertSuccessful();
         $this->assertSame(2, Player::count()); // "Newcomer" was replaced along with everything else
+        $this->assertSame(1, \App\Models\User::count()); // the SQLite file had no logins, so the existing one is kept
         unlink($path);
     }
 

@@ -33,7 +33,13 @@ docker compose pull
 docker compose up -d
 ```
 
-Then open `http://<your-pi>:8080`. Your database and app key are kept in `./data`; back that folder up.
+Then create your login (the first account is always an admin) and open `http://<your-pi>:8080`:
+
+```bash
+docker compose exec aetracker php artisan aetracker:user you@example.com --name=YourName
+```
+
+Your database and app key are kept in `./data`; back that folder up.
 
 **To update** after new changes are pushed and the GitHub build finishes: `docker compose pull && docker compose up -d`. Database changes are applied automatically when the container starts.
 
@@ -74,6 +80,24 @@ The tracker waits for the database to be ready and creates the tables when it st
 
 **Without Docker**, set the same `DB_*` values in `.env` and run `php artisan migrate`.
 
+### Logins
+
+Every page needs a login; there's no sign-up page, so only people you add can get in.
+
+- Create the first account (an admin) with `php artisan aetracker:user you@example.com --name=YourName` (prefix with `docker compose exec aetracker` for Docker). Running it again for an existing email resets that password.
+- Admins add and remove people, reset passwords and make others admins on the **Users** page. Members can use everything except that page.
+- Everyone can change their name, email and password by clicking their name at the top.
+- Five wrong passwords in a row pause logins for that email for a minute.
+- The bookmarklet still works: the leaderboard is held until you review it, and the review page asks you to log in first if you aren't.
+
+**Making it public**: put it behind HTTPS (e.g. Nginx Proxy Manager, Caddy or a Cloudflare Tunnel) so passwords aren't sent in plain text, and add these to `environment:` in `docker-compose.yml`:
+
+```yaml
+      APP_URL: "https://tracker.example.com"
+      TRUSTED_PROXIES: "*"          # the proxy's IP, or * - so the app sees https:// and real visitor IPs
+      SESSION_SECURE_COOKIE: "true" # only send the login cookie over https
+```
+
 ### Converting your SQLite data to MySQL / MariaDB
 
 Once the tracker is pointed at MySQL/MariaDB (above), copy everything from your SQLite file into it - locations, players (including anonymous ones), snapshots, your parcel counts and all settings, keeping the same IDs. Your SQLite file isn't changed, and an older one is brought up to date on the way.
@@ -86,7 +110,14 @@ docker compose exec aetracker php artisan aetracker:copy-database /data/database
 php artisan aetracker:copy-database /path/to/database.sqlite
 ```
 
-It won't copy over existing tracker data unless you add `--replace`, which empties the tracker's tables in MySQL first.
+It won't copy over existing tracker data unless you add `--replace`, which empties the tracker's tables in MySQL first. Logins are only copied if the SQLite file has any, so an account you've already made in MySQL is kept.
+
+**Prefer phpMyAdmin?** A SQLite dump (`sqlite3 … .dump`) won't import into MySQL - the SQL dialects differ. Instead, start the tracker against MySQL once so it creates the tables, then export your SQLite data as MySQL `INSERT`s and import that file in phpMyAdmin (Import tab, on the tracker's database):
+
+```bash
+# Docker, while still on SQLite: writes ./data/aetracker-data.sql
+docker compose exec aetracker php artisan aetracker:export-mysql
+```
 
 ### Importing the old tracker's database
 

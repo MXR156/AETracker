@@ -19,7 +19,7 @@ class CopyDatabase extends Command
     protected $description = 'Copy all tracker data from a SQLite file into the configured database (e.g. MySQL)';
 
     /** Tracker tables, parents before children so foreign keys are satisfied. Sessions, cache and jobs are skipped. */
-    public const TABLES = ['locations', 'players', 'snapshots', 'snapshot_entries', 'holdings', 'settings'];
+    public const TABLES = ['users', 'locations', 'players', 'snapshots', 'snapshot_entries', 'holdings', 'settings'];
 
     private const SOURCE = 'aetracker_copy_source';
 
@@ -59,7 +59,11 @@ class CopyDatabase extends Command
 
             $source = DB::connection(self::SOURCE);
 
-            $notEmpty = array_filter(self::TABLES, fn ($t) => $target->table($t)->exists());
+            // Logins are only copied if the SQLite file has some, so an account you've already
+            // made in the target database isn't counted as a clash or wiped by --replace.
+            $tables = $source->table('users')->exists() ? self::TABLES : array_values(array_diff(self::TABLES, ['users']));
+
+            $notEmpty = array_filter($tables, fn ($t) => $target->table($t)->exists());
             if ($notEmpty && ! $this->option('replace')) {
                 $this->error('The target database already has tracker data ('.implode(', ', $notEmpty).').');
                 $this->line('Run again with --replace to empty those tables and copy over them.');
@@ -68,16 +72,16 @@ class CopyDatabase extends Command
             }
 
             $counts = [];
-            $target->transaction(function () use ($source, $target, &$counts) {
+            $target->transaction(function () use ($source, $target, $tables, &$counts) {
                 if ($this->option('replace')) {
-                    Schema::connection($target->getName())->withoutForeignKeyConstraints(function () use ($target) {
-                        foreach (array_reverse(self::TABLES) as $table) {
+                    Schema::connection($target->getName())->withoutForeignKeyConstraints(function () use ($target, $tables) {
+                        foreach (array_reverse($tables) as $table) {
                             $target->table($table)->delete();
                         }
                     });
                 }
 
-                foreach (self::TABLES as $table) {
+                foreach ($tables as $table) {
                     $counts[$table] = 0;
                     $source->table($table)->orderBy($table === 'settings' ? 'key' : 'id')->chunk(500, function ($rows) use ($target, $table, &$counts) {
                         $target->table($table)->insert($rows->map(fn ($r) => (array) $r)->all());
@@ -86,7 +90,7 @@ class CopyDatabase extends Command
                 }
             });
 
-            $this->resetAutoIncrements($target);
+            $this->resetAutoIncrements($target, $tables);
 
             $this->newLine();
             $this->table(['Table', 'Rows copied'], collect($counts)->map(fn ($n, $t) => [$t, $n])->values()->all());
@@ -101,9 +105,9 @@ class CopyDatabase extends Command
     }
 
     /** Make sure new rows continue after the copied IDs (MySQL/MariaDB and PostgreSQL). */
-    private function resetAutoIncrements($target): void
+    private function resetAutoIncrements($target, array $tables): void
     {
-        foreach (array_diff(self::TABLES, ['settings']) as $table) {
+        foreach (array_diff($tables, ['settings']) as $table) {
             $next = (int) $target->table($table)->max('id') + 1;
             match ($target->getDriverName()) {
                 'mysql', 'mariadb' => $target->statement("ALTER TABLE `{$table}` AUTO_INCREMENT = {$next}"),

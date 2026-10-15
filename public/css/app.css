@@ -30,6 +30,11 @@ header.top .brand { font-weight: 700; color: var(--text); font-size: 1.05rem; }
 header.top .brand span { color: var(--accent); }
 header.top nav { display: flex; gap: .25rem; flex-wrap: wrap; }
 header.top nav a { padding: .35rem .7rem; border-radius: 6px; color: var(--muted); }
+header.top .user-menu { margin-left: auto; display: flex; gap: .9rem; align-items: center; font-size: .9rem; }
+header.top .user-menu a { color: var(--muted); }
+header.top .user-menu a.active { color: var(--accent); }
+header.top .user-menu .link-btn { color: var(--muted); }
+.auth-box { max-width: 380px; margin: 3rem auto; }
 header.top nav a.active, header.top nav a:hover { background: var(--accent-soft); color: var(--accent); text-decoration: none; }
 
 main { max-width: 1200px; margin: 0 auto; padding: 1.25rem 16px 3rem; }

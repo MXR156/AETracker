@@ -15,6 +15,12 @@ return Application::configure(basePath: dirname(__DIR__))
         // The bookmarklet posts from the Atlas Earth site, so it can't send a CSRF token.
         // This route only stages the data; saving it still needs a CSRF-protected form.
         $middleware->validateCsrfTokens(except: ['import/atlas-earth']);
+
+        // Behind a reverse proxy that adds HTTPS (e.g. when the tracker is public), set TRUSTED_PROXIES
+        // to its IP (or "*") so Laravel sees the real https:// address and the visitor's IP.
+        if ($proxies = env('TRUSTED_PROXIES')) {
+            $middleware->trustProxies(at: $proxies === '*' ? '*' : array_map('trim', explode(',', $proxies)));
+        }
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(

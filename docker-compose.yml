@@ -16,3 +16,6 @@ services:
       APP_URL: "http://raspberrypi.local:8080"
       APP_TIMEZONE: "Europe/London"
       # APP_KEY: ""        # optional - one is generated and kept in ./data/app_key if not set
+      # When public behind an HTTPS proxy (see README "Logins"):
+      # TRUSTED_PROXIES: "*"
+      # SESSION_SECURE_COOKIE: "true"
