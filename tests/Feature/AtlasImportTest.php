@@ -134,4 +134,35 @@ class AtlasImportTest extends TestCase
         $this->assertStringContainsString(route('import.receive'), $code);
         $this->assertStringNotContainsString('__TARGET__', $code);
     }
+
+    private function bookmarkletCode(string $html): string
+    {
+        preg_match('/href="(javascript:[^"]+)"/', $html, $m);
+
+        return rawurldecode(html_entity_decode(substr($m[1], 11)));
+    }
+
+    public function test_https_app_url_makes_the_bookmarklet_send_to_https(): void
+    {
+        // Behind Cloudflare the app is reached over plain http, but APP_URL says https.
+        config(['app.url' => 'https://aetracker.example.com']);
+        (new \App\Providers\AppServiceProvider($this->app))->boot();
+
+        $html = $this->get('/import')->assertOk()->getContent();
+        $this->assertStringContainsString("var target = 'https://", $this->bookmarkletCode($html));
+        $this->assertStringNotContainsString('form isn', $html);
+    }
+
+    public function test_warns_when_viewed_over_https_but_the_bookmarklet_would_use_http(): void
+    {
+        config(['app.url' => 'http://raspberrypi.local:8080']);
+
+        // What Cloudflare adds when the visitor is on https.
+        $html = $this->get('/import', ['CF-Visitor' => '{"scheme":"https"}'])->assertOk()->getContent();
+        $this->assertStringContainsString("var target = 'http://", $this->bookmarkletCode($html));
+        $this->assertStringContainsString('would send to an insecure', $html);
+
+        // No warning on a plain http setup (e.g. on your own network).
+        $this->get('/import')->assertOk()->assertDontSee('would send to an insecure');
+    }
 }

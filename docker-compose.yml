@@ -13,6 +13,8 @@ services:
     volumes:
       - ./data:/data       # SQLite database and app key
     environment:
+      # The address you open the tracker at. Behind Cloudflare/HTTPS, use the https:// address -
+      # the Import bookmarklet sends to it, and it must be https to work from the Atlas Earth site.
       APP_URL: "http://raspberrypi.local:8080"
       APP_TIMEZONE: "Europe/London"
       # APP_KEY: ""        # optional - one is generated and kept in ./data/app_key if not set

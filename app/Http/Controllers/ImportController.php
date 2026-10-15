@@ -22,9 +22,20 @@ class ImportController extends Controller
 {
     private const CACHE_PREFIX = 'atlas-import:';
 
-    public function index()
+    public function index(Request $request)
     {
-        return view('import.index', ['bookmarklet' => $this->bookmarklet()]);
+        return view('import.index', [
+            'bookmarklet' => $this->bookmarklet(),
+            'insecureTarget' => str_starts_with(route('import.receive'), 'http://') && self::viewedOverHttps($request),
+        ]);
+    }
+
+    /** Is the visitor really on https, with a proxy (Cloudflare, Nginx...) in front of the app? */
+    private static function viewedOverHttps(Request $request): bool
+    {
+        return $request->isSecure()
+            || strtolower((string) $request->header('X-Forwarded-Proto')) === 'https'
+            || str_contains(strtolower((string) $request->header('CF-Visitor')), '"https"');
     }
 
     /** The bookmarklet as a javascript: URL pointing at this tracker. */

@@ -100,7 +100,7 @@ The tracker waits for the database to be ready and creates the tables when it st
 - Five wrong passwords in a row pause logins for that email for a minute.
 - The bookmarklet still works: the leaderboard is held until you review it, and the review page asks you to log in first if you aren't.
 
-**Making it public**: put it behind HTTPS (e.g. Nginx Proxy Manager, Caddy or a Cloudflare Tunnel) so passwords aren't sent in plain text, and add these to `environment:` in `docker-compose.yml`:
+**Making it public**: put it behind HTTPS (e.g. Nginx Proxy Manager, Caddy, Cloudflare or a Cloudflare Tunnel) so passwords aren't sent in plain text, and add these to `environment:` in `docker-compose.yml`. `APP_URL` matters most: the proxy talks to the tracker over plain http, so without an `https://` `APP_URL` the tracker builds `http://` links - and the Import bookmarklet would post to `http://`, which browsers warn about and the redirect to https then drops. After changing it, drag the Import button to your bookmarks bar again.
 
 ```yaml
       APP_URL: "https://tracker.example.com"

@@ -6,6 +6,15 @@
         <div class="muted">Grab a leaderboard straight from the Atlas Earth map in your browser - no copying and pasting.</div></div>
 </div>
 
+@if ($insecureTarget)
+    <div class="alert alert-err">
+        <strong>The button below would send to an insecure <code>http://</code> address</strong>, but you're viewing this site over https
+        (e.g. through Cloudflare). Your browser will warn that the form isn't secure, and the import won't arrive.<br>
+        Fix: set <code>APP_URL</code> to your https address (e.g. <code>APP_URL: "https://{{ request()->getHost() }}"</code>) in
+        <code>docker-compose.yml</code>, run <code>docker compose up -d</code>, then come back here and drag the button to your bookmarks bar again.
+    </div>
+@endif
+
 <div class="grid grid-2">
     <div class="card">
         <h2>1. Add the button to your bookmarks bar</h2>
