@@ -33,7 +33,7 @@
                 @if ($me)<td class="num hide-sm">{{ $p->shared ?: '' }}</td>@endif
                 <td class="small">
                     @foreach ($p->locations->sortByDesc(fn ($l) => $l->row->parcels) as $pos)
-                        <a href="{{ route('locations.show', $pos->location) }}">{{ $pos->location->name }}</a>
+                        <a href="{{ route('locations.show', $pos->location) }}" @if (! $pos->counted) class="muted" title="Inside another location they're on - not added to the total again" @endif>{{ $pos->location->name }}</a>
                         <span class="muted">{{ $pos->is_leader ? '👑' : '#'.$pos->row->rank }} {{ $pos->row->parcels }}</span>@if (! $loop->last) · @endif
                     @endforeach
                     @if ($p->locations->isEmpty())<span class="muted">not on any current board</span>@endif
@@ -44,6 +44,6 @@
         @endforelse
         </tbody>
     </table>
-    <p class="muted small" style="margin-bottom:0">* Total parcels across the locations you track (latest snapshot of each), not their whole account.</p>
+    <p class="muted small" style="margin-bottom:0">* Total parcels across the locations tracked here (latest snapshot of each), not their whole account. A town inside a county (or a county inside a country) they're also on the board for is shown greyed out and isn't added again - the bigger board already includes it.</p>
 </div>
 @endsection

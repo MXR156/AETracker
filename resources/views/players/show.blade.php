@@ -11,7 +11,7 @@
                 Anonymous players are numbered per location, so the same number in another location is a different player.</div>
         @endif
         <div class="muted">On {{ $rows->count() }} current {{ Str::plural('board', $rows->count()) }} ·
-            {{ number_format($rows->sum(fn ($r) => $r->row->parcels)) }} parcels in tracked locations ·
+            {{ number_format($total) }} parcels in tracked locations ·
             {{ $rows->where('is_leader', true)->count() }} × leader</div>
         @if ($player->notes)<div class="small" style="margin-top:.35rem">{{ $player->notes }}</div>@endif
     </div>
@@ -36,7 +36,8 @@
         @forelse ($rows as $r)
             <tr>
                 <td><a href="{{ route('locations.show', $r->location) }}">{{ $r->location->displayName() }}</a>
-                    @if ($r->is_leader)<span class="chip chip-gold">{{ $r->location->leaderTitle() }}</span>@endif</td>
+                    @if ($r->is_leader)<span class="chip chip-gold">{{ $r->location->leaderTitle() }}</span>@endif
+                    @if ($r->within)<div class="small muted">part of {{ $r->within->name }} - not added to the total again</div>@endif</td>
                 <td class="num">{{ $r->is_leader ? '👑' : '#'.$r->row->rank }}</td>
                 <td class="num"><strong>{{ number_format($r->row->parcels) }}</strong></td>
                 <td class="num">{!! ae_change($r->row->change, $r->row->is_new) !!}</td>

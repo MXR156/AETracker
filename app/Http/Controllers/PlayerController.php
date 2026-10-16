@@ -43,11 +43,16 @@ class PlayerController extends Controller
             ->get()
             ->map(function ($player) use ($positions, $myLocations) {
                 $mine = collect($positions[$player->id] ?? []);
+                $counted = Location::countedOnce($mine);
+                foreach ($mine as $p) {
+                    $p->counted = $counted->contains($p);
+                }
 
                 return (object) [
                     'player' => $player,
                     'locations' => $mine,
-                    'total' => $mine->sum(fn ($p) => $p->row->parcels),
+                    // A county's board already includes its towns, so those aren't added again.
+                    'total' => $counted->sum(fn ($p) => $p->row->parcels),
                     'leads' => $mine->where('is_leader', true)->count(),
                     'shared' => $player->is_me ? null : $mine->whereIn('location.id', $myLocations)->count(),
                 ];
@@ -69,13 +74,21 @@ class PlayerController extends Controller
             return $p;
         })->sortByDesc(fn ($p) => $p->row->parcels)->values();
 
+        // Towns inside a county (or counties inside a country) they're also on the board for aren't added twice.
+        $counted = Location::countedOnce($rows);
+        foreach ($rows as $p) {
+            $p->counted = $counted->contains($p);
+            $p->within = $p->counted ? null : $rows->first(fn ($o) => $o->location->contains($p->location))?->location;
+        }
+        $total = $counted->sum(fn ($p) => $p->row->parcels);
+
         // Locations they used to be in but no longer appear in the latest snapshot.
         $past = Location::whereHas('snapshots.entries', fn ($q) => $q->where('player_id', $player->id))
             ->whereNotIn('id', $rows->pluck('location.id'))
             ->orderBy('name')
             ->get();
 
-        return view('players.show', compact('player', 'rows', 'past', 'me'));
+        return view('players.show', compact('player', 'rows', 'past', 'me', 'total'));
     }
 
     public function update(Request $request, Player $player)

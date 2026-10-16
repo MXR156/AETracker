@@ -67,12 +67,18 @@ class DashboardController extends Controller
         $boards = Location::orderBy('name')->get()->map(fn ($l) => new Leaderboard($l))->filter(fn ($b) => $b->latest)->values();
         $rows = $boards->flatMap(fn ($b) => $b->rows->map(fn ($r) => (object) ['board' => $b, 'row' => $r]));
 
+        // Each player's total, counting a town once when they're also on the board of the county
+        // (or country) that contains it - the bigger board already includes it.
+        $totals = $rows->groupBy(fn ($x) => $x->row->player->id)
+            ->map(fn ($items) => Location::countedOnce($items->map(fn ($x) => (object) ['location' => $x->board->location, 'row' => $x->row]))
+                ->sum(fn ($p) => $p->row->parcels));
+
         // Biggest landowners across the tracked locations (named players only).
         $landowners = $rows->reject(fn ($x) => $x->row->player->isGhost())
             ->groupBy(fn ($x) => $x->row->player->id)
             ->map(fn ($items) => (object) [
                 'player' => $items->first()->row->player,
-                'parcels' => $items->sum(fn ($x) => $x->row->parcels),
+                'parcels' => $totals[$items->first()->row->player->id],
                 'locations' => $items->count(),
                 'leads' => $items->where('row.rank', 1)->count(),
             ])
@@ -84,7 +90,7 @@ class DashboardController extends Controller
                 'locations' => $boards->count(),
                 'players' => Player::real()->count(),
                 'snapshots' => Snapshot::count(),
-                'parcels' => $rows->sum(fn ($x) => $x->row->parcels),
+                'parcels' => $totals->sum(),
             ],
             'mayors' => $boards->filter(fn ($b) => $b->leader())->sortByDesc(fn ($b) => $b->leader()->parcels)->take(12)->values(),
             'landowners' => $landowners,
